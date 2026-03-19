@@ -4,6 +4,10 @@
     {
       "patch": "patch_file_1.patch",
       "breaks": ["break-001.json"]
+    },
+    {
+      "patch": "patch_file_2.patch",
+      "breaks": ["break-002.json"]
     }
   ]
 }
