@@ -1,0 +1,9 @@
+{
+  "team": "Culua",
+  "fixes": [
+    {
+      "patch": "patch_file_1.patch",
+      "breaks": ["break-001.json"]
+    }
+  ]
+}

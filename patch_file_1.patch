@@ -1,0 +1,4320 @@
+diff --git a/Makefile b/Makefile
+index 805a121..6c33c48 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,32 +1,32 @@
+-all: logappend logread
+-
+-CFLAGS=-g 
+-
+-# Add any libraries you want to include here via: -lthe_library_name
+-LFLAGS=-ljansson -lcrypto
+-
+-# Add source code files into the list
+-SRC=brg_types.h data.c data.h logappend.c logread.c Makefile
+-
+-logappend: logappend.o data.o
+-	$(CC) -g -o logappend logappend.o data.o $(LFLAGS)
+-
+-logread: logread.o data.o
+-	$(CC) $(CFLAGS) -o logread logread.o data.o $(LFLAGS)
+-
+-logappend.o: logappend.c
+-	$(CC) $(CFLAGS) -c -o logappend.o logappend.c
+-
+-logread.o: logread.c
+-	$(CC) $(CFLAGS) -c -o logread.o logread.c
+-
+-data.o: data.c
+-	$(CC) $(CFLAGS) -c -o data.o data.c
+-
+-handin: clean
+-	rm -f handin.tar
+-	tar -cf handin.tar --exclude=handin.tar $(SRC)
+-
+-clean:
+-	rm -f *.o
+-	rm -f logappend logread
++all: logappend logread
++
++CFLAGS=-g 
++
++# Add any libraries you want to include here via: -lthe_library_name
++LFLAGS=-ljansson -lcrypto
++
++# Add source code files into the list
++SRC=brg_types.h data.c data.h logappend.c logread.c Makefile
++
++logappend: logappend.o data.o
++	$(CC) -g -o logappend logappend.o data.o $(LFLAGS)
++
++logread: logread.o data.o
++	$(CC) $(CFLAGS) -o logread logread.o data.o $(LFLAGS)
++
++logappend.o: logappend.c
++	$(CC) $(CFLAGS) -c -o logappend.o logappend.c
++
++logread.o: logread.c
++	$(CC) $(CFLAGS) -c -o logread.o logread.c
++
++data.o: data.c
++	$(CC) $(CFLAGS) -c -o data.o data.c
++
++handin: clean
++	rm -f handin.tar
++	tar -cf handin.tar --exclude=handin.tar $(SRC)
++
++clean:
++	rm -f *.o
++	rm -f logappend logread
+diff --git a/brg_types.h b/brg_types.h
+index 307319b..415e7a0 100644
+--- a/brg_types.h
++++ b/brg_types.h
+@@ -1,191 +1,191 @@
+-/*
+----------------------------------------------------------------------------
+-Copyright (c) 1998-2013, Brian Gladman, Worcester, UK. All rights reserved.
+-
+-The redistribution and use of this software (with or without changes)
+-is allowed without the payment of fees or royalties provided that:
+-
+-  source code distributions include the above copyright notice, this
+-  list of conditions and the following disclaimer;
+-
+-  binary distributions include the above copyright notice, this list
+-  of conditions and the following disclaimer in their documentation.
+-
+-This software is provided 'as is' with no explicit or implied warranties
+-in respect of its operation, including, but not limited to, correctness
+-and fitness for purpose.
+----------------------------------------------------------------------------
+-Issue Date: 20/12/2007
+-
+- The unsigned integer types defined here are of the form uint_<nn>t where
+- <nn> is the length of the type; for example, the unsigned 32-bit type is
+- 'uint32_t'.  These are NOT the same as the 'C99 integer types' that are
+- defined in the inttypes.h and stdint.h headers since attempts to use these
+- types have shown that support for them is still highly variable.  However,
+- since the latter are of the form uint<nn>_t, a regular expression search
+- and replace (in VC++ search on 'uint_{:z}t' and replace with 'uint\1_t')
+- can be used to convert the types used here to the C99 standard types.
+-*/
+-
+-#ifndef _BRG_TYPES_H
+-#define _BRG_TYPES_H
+-
+-#if defined(__cplusplus)
+-extern "C" {
+-#endif
+-
+-#include <limits.h>
+-#include <stdint.h>
+-
+-#if defined( _MSC_VER ) && ( _MSC_VER >= 1300 )
+-#  include <stddef.h>
+-#  define ptrint_t intptr_t
+-#elif defined( __ECOS__ )
+-#  define intptr_t unsigned int
+-#  define ptrint_t intptr_t
+-#elif defined( __GNUC__ ) && ( __GNUC__ >= 3 )
+-#  define ptrint_t intptr_t
+-#else
+-#  define ptrint_t int
+-#endif
+-
+-#ifndef BRG_UI32
+-#  define BRG_UI32
+-#  if UINT_MAX == 4294967295u
+-#    define li_32(h) 0x##h##u
+-#  elif ULONG_MAX == 4294967295u
+-#    define li_32(h) 0x##h##ul
+-#  elif defined( _CRAY )
+-#    error This code needs 32-bit data types, which Cray machines do not provide
+-#  else
+-#    error Please define uint32_t as a 32-bit unsigned integer type in brg_types.h
+-#  endif
+-#endif
+-
+-#ifndef BRG_UI64
+-#  if defined( __BORLANDC__ ) && !defined( __MSDOS__ )
+-#    define BRG_UI64
+-#    define li_64(h) 0x##h##ui64
+-#  elif defined( _MSC_VER ) && ( _MSC_VER < 1300 )    /* 1300 == VC++ 7.0 */
+-#    define BRG_UI64
+-#    define li_64(h) 0x##h##ui64
+-#  elif defined( __sun ) && defined( ULONG_MAX ) && ULONG_MAX == 0xfffffffful
+-#    define BRG_UI64
+-#    define li_64(h) 0x##h##ull
+-#  elif defined( __MVS__ )
+-#    define BRG_UI64
+-#    define li_64(h) 0x##h##ull
+-#  elif defined( UINT_MAX ) && UINT_MAX > 4294967295u
+-#    if UINT_MAX == 18446744073709551615u
+-#      define BRG_UI64
+-#      define li_64(h) 0x##h##u
+-#    endif
+-#  elif defined( ULONG_MAX ) && ULONG_MAX > 4294967295u
+-#    if ULONG_MAX == 18446744073709551615ul
+-#      define BRG_UI64
+-#      define li_64(h) 0x##h##ul
+-#    endif
+-#  elif defined( ULLONG_MAX ) && ULLONG_MAX > 4294967295u
+-#    if ULLONG_MAX == 18446744073709551615ull
+-#      define BRG_UI64
+-#      define li_64(h) 0x##h##ull
+-#    endif
+-#  elif defined( ULONG_LONG_MAX ) && ULONG_LONG_MAX > 4294967295u
+-#    if ULONG_LONG_MAX == 18446744073709551615ull
+-#      define BRG_UI64
+-#      define li_64(h) 0x##h##ull
+-#    endif
+-#  endif
+-#endif
+-
+-#if !defined( BRG_UI64 )
+-#  if defined( NEED_UINT_64T )
+-#    error Please define uint64_t as an unsigned 64 bit type in brg_types.h
+-#  endif
+-#endif
+-
+-#ifndef RETURN_VALUES
+-#  define RETURN_VALUES
+-#  if defined( DLL_EXPORT )
+-#    if defined( _MSC_VER ) || defined ( __INTEL_COMPILER )
+-#      define VOID_RETURN    __declspec( dllexport ) void __stdcall
+-#      define INT_RETURN     __declspec( dllexport ) int  __stdcall
+-#    elif defined( __GNUC__ )
+-#      define VOID_RETURN    __declspec( __dllexport__ ) void
+-#      define INT_RETURN     __declspec( __dllexport__ ) int
+-#    else
+-#      error Use of the DLL is only available on the Microsoft, Intel and GCC compilers
+-#    endif
+-#  elif defined( DLL_IMPORT )
+-#    if defined( _MSC_VER ) || defined ( __INTEL_COMPILER )
+-#      define VOID_RETURN    __declspec( dllimport ) void __stdcall
+-#      define INT_RETURN     __declspec( dllimport ) int  __stdcall
+-#    elif defined( __GNUC__ )
+-#      define VOID_RETURN    __declspec( __dllimport__ ) void
+-#      define INT_RETURN     __declspec( __dllimport__ ) int
+-#    else
+-#      error Use of the DLL is only available on the Microsoft, Intel and GCC compilers
+-#    endif
+-#  elif defined( __WATCOMC__ )
+-#    define VOID_RETURN  void __cdecl
+-#    define INT_RETURN   int  __cdecl
+-#  else
+-#    define VOID_RETURN  void
+-#    define INT_RETURN   int
+-#  endif
+-#endif
+-
+-/*	These defines are used to detect and set the memory alignment of pointers.
+-    Note that offsets are in bytes.
+-
+-    ALIGN_OFFSET(x,n)			return the positive or zero offset of 
+-                                the memory addressed by the pointer 'x' 
+-                                from an address that is aligned on an 
+-                                'n' byte boundary ('n' is a power of 2)
+-
+-    ALIGN_FLOOR(x,n)			return a pointer that points to memory
+-                                that is aligned on an 'n' byte boundary 
+-                                and is not higher than the memory address
+-                                pointed to by 'x' ('n' is a power of 2)
+-
+-    ALIGN_CEIL(x,n)				return a pointer that points to memory
+-                                that is aligned on an 'n' byte boundary 
+-                                and is not lower than the memory address
+-                                pointed to by 'x' ('n' is a power of 2)
+-*/
+-
+-#define ALIGN_OFFSET(x,n)	(((ptrint_t)(x)) & ((n) - 1))
+-#define ALIGN_FLOOR(x,n)	((uint8_t*)(x) - ( ((ptrint_t)(x)) & ((n) - 1)))
+-#define ALIGN_CEIL(x,n)		((uint8_t*)(x) + (-((ptrint_t)(x)) & ((n) - 1)))
+-
+-/*  These defines are used to declare buffers in a way that allows
+-    faster operations on longer variables to be used.  In all these
+-    defines 'size' must be a power of 2 and >= 8. NOTE that the 
+-    buffer size is in bytes but the type length is in bits
+-
+-    UNIT_TYPEDEF(x,size)        declares a variable 'x' of length 
+-                                'size' bits
+-
+-    BUFR_TYPEDEF(x,size,bsize)  declares a buffer 'x' of length 'bsize' 
+-                                bytes defined as an array of variables
+-                                each of 'size' bits (bsize must be a 
+-                                multiple of size / 8)
+-
+-    UNIT_CAST(x,size)           casts a variable to a type of 
+-                                length 'size' bits
+-
+-    UPTR_CAST(x,size)           casts a pointer to a pointer to a 
+-                                varaiable of length 'size' bits
+-*/
+-
+-#define UI_TYPE(size)               uint##size##_t
+-#define UNIT_TYPEDEF(x,size)        typedef UI_TYPE(size) x
+-#define BUFR_TYPEDEF(x,size,bsize)  typedef UI_TYPE(size) x[bsize / (size >> 3)]
+-#define UNIT_CAST(x,size)           ((UI_TYPE(size) )(x))  
+-#define UPTR_CAST(x,size)           ((UI_TYPE(size)*)(x))
+-
+-#if defined(__cplusplus)
+-}
+-#endif
+-
+-#endif
++/*
++---------------------------------------------------------------------------
++Copyright (c) 1998-2013, Brian Gladman, Worcester, UK. All rights reserved.
++
++The redistribution and use of this software (with or without changes)
++is allowed without the payment of fees or royalties provided that:
++
++  source code distributions include the above copyright notice, this
++  list of conditions and the following disclaimer;
++
++  binary distributions include the above copyright notice, this list
++  of conditions and the following disclaimer in their documentation.
++
++This software is provided 'as is' with no explicit or implied warranties
++in respect of its operation, including, but not limited to, correctness
++and fitness for purpose.
++---------------------------------------------------------------------------
++Issue Date: 20/12/2007
++
++ The unsigned integer types defined here are of the form uint_<nn>t where
++ <nn> is the length of the type; for example, the unsigned 32-bit type is
++ 'uint32_t'.  These are NOT the same as the 'C99 integer types' that are
++ defined in the inttypes.h and stdint.h headers since attempts to use these
++ types have shown that support for them is still highly variable.  However,
++ since the latter are of the form uint<nn>_t, a regular expression search
++ and replace (in VC++ search on 'uint_{:z}t' and replace with 'uint\1_t')
++ can be used to convert the types used here to the C99 standard types.
++*/
++
++#ifndef _BRG_TYPES_H
++#define _BRG_TYPES_H
++
++#if defined(__cplusplus)
++extern "C" {
++#endif
++
++#include <limits.h>
++#include <stdint.h>
++
++#if defined( _MSC_VER ) && ( _MSC_VER >= 1300 )
++#  include <stddef.h>
++#  define ptrint_t intptr_t
++#elif defined( __ECOS__ )
++#  define intptr_t unsigned int
++#  define ptrint_t intptr_t
++#elif defined( __GNUC__ ) && ( __GNUC__ >= 3 )
++#  define ptrint_t intptr_t
++#else
++#  define ptrint_t int
++#endif
++
++#ifndef BRG_UI32
++#  define BRG_UI32
++#  if UINT_MAX == 4294967295u
++#    define li_32(h) 0x##h##u
++#  elif ULONG_MAX == 4294967295u
++#    define li_32(h) 0x##h##ul
++#  elif defined( _CRAY )
++#    error This code needs 32-bit data types, which Cray machines do not provide
++#  else
++#    error Please define uint32_t as a 32-bit unsigned integer type in brg_types.h
++#  endif
++#endif
++
++#ifndef BRG_UI64
++#  if defined( __BORLANDC__ ) && !defined( __MSDOS__ )
++#    define BRG_UI64
++#    define li_64(h) 0x##h##ui64
++#  elif defined( _MSC_VER ) && ( _MSC_VER < 1300 )    /* 1300 == VC++ 7.0 */
++#    define BRG_UI64
++#    define li_64(h) 0x##h##ui64
++#  elif defined( __sun ) && defined( ULONG_MAX ) && ULONG_MAX == 0xfffffffful
++#    define BRG_UI64
++#    define li_64(h) 0x##h##ull
++#  elif defined( __MVS__ )
++#    define BRG_UI64
++#    define li_64(h) 0x##h##ull
++#  elif defined( UINT_MAX ) && UINT_MAX > 4294967295u
++#    if UINT_MAX == 18446744073709551615u
++#      define BRG_UI64
++#      define li_64(h) 0x##h##u
++#    endif
++#  elif defined( ULONG_MAX ) && ULONG_MAX > 4294967295u
++#    if ULONG_MAX == 18446744073709551615ul
++#      define BRG_UI64
++#      define li_64(h) 0x##h##ul
++#    endif
++#  elif defined( ULLONG_MAX ) && ULLONG_MAX > 4294967295u
++#    if ULLONG_MAX == 18446744073709551615ull
++#      define BRG_UI64
++#      define li_64(h) 0x##h##ull
++#    endif
++#  elif defined( ULONG_LONG_MAX ) && ULONG_LONG_MAX > 4294967295u
++#    if ULONG_LONG_MAX == 18446744073709551615ull
++#      define BRG_UI64
++#      define li_64(h) 0x##h##ull
++#    endif
++#  endif
++#endif
++
++#if !defined( BRG_UI64 )
++#  if defined( NEED_UINT_64T )
++#    error Please define uint64_t as an unsigned 64 bit type in brg_types.h
++#  endif
++#endif
++
++#ifndef RETURN_VALUES
++#  define RETURN_VALUES
++#  if defined( DLL_EXPORT )
++#    if defined( _MSC_VER ) || defined ( __INTEL_COMPILER )
++#      define VOID_RETURN    __declspec( dllexport ) void __stdcall
++#      define INT_RETURN     __declspec( dllexport ) int  __stdcall
++#    elif defined( __GNUC__ )
++#      define VOID_RETURN    __declspec( __dllexport__ ) void
++#      define INT_RETURN     __declspec( __dllexport__ ) int
++#    else
++#      error Use of the DLL is only available on the Microsoft, Intel and GCC compilers
++#    endif
++#  elif defined( DLL_IMPORT )
++#    if defined( _MSC_VER ) || defined ( __INTEL_COMPILER )
++#      define VOID_RETURN    __declspec( dllimport ) void __stdcall
++#      define INT_RETURN     __declspec( dllimport ) int  __stdcall
++#    elif defined( __GNUC__ )
++#      define VOID_RETURN    __declspec( __dllimport__ ) void
++#      define INT_RETURN     __declspec( __dllimport__ ) int
++#    else
++#      error Use of the DLL is only available on the Microsoft, Intel and GCC compilers
++#    endif
++#  elif defined( __WATCOMC__ )
++#    define VOID_RETURN  void __cdecl
++#    define INT_RETURN   int  __cdecl
++#  else
++#    define VOID_RETURN  void
++#    define INT_RETURN   int
++#  endif
++#endif
++
++/*	These defines are used to detect and set the memory alignment of pointers.
++    Note that offsets are in bytes.
++
++    ALIGN_OFFSET(x,n)			return the positive or zero offset of 
++                                the memory addressed by the pointer 'x' 
++                                from an address that is aligned on an 
++                                'n' byte boundary ('n' is a power of 2)
++
++    ALIGN_FLOOR(x,n)			return a pointer that points to memory
++                                that is aligned on an 'n' byte boundary 
++                                and is not higher than the memory address
++                                pointed to by 'x' ('n' is a power of 2)
++
++    ALIGN_CEIL(x,n)				return a pointer that points to memory
++                                that is aligned on an 'n' byte boundary 
++                                and is not lower than the memory address
++                                pointed to by 'x' ('n' is a power of 2)
++*/
++
++#define ALIGN_OFFSET(x,n)	(((ptrint_t)(x)) & ((n) - 1))
++#define ALIGN_FLOOR(x,n)	((uint8_t*)(x) - ( ((ptrint_t)(x)) & ((n) - 1)))
++#define ALIGN_CEIL(x,n)		((uint8_t*)(x) + (-((ptrint_t)(x)) & ((n) - 1)))
++
++/*  These defines are used to declare buffers in a way that allows
++    faster operations on longer variables to be used.  In all these
++    defines 'size' must be a power of 2 and >= 8. NOTE that the 
++    buffer size is in bytes but the type length is in bits
++
++    UNIT_TYPEDEF(x,size)        declares a variable 'x' of length 
++                                'size' bits
++
++    BUFR_TYPEDEF(x,size,bsize)  declares a buffer 'x' of length 'bsize' 
++                                bytes defined as an array of variables
++                                each of 'size' bits (bsize must be a 
++                                multiple of size / 8)
++
++    UNIT_CAST(x,size)           casts a variable to a type of 
++                                length 'size' bits
++
++    UPTR_CAST(x,size)           casts a pointer to a pointer to a 
++                                varaiable of length 'size' bits
++*/
++
++#define UI_TYPE(size)               uint##size##_t
++#define UNIT_TYPEDEF(x,size)        typedef UI_TYPE(size) x
++#define BUFR_TYPEDEF(x,size,bsize)  typedef UI_TYPE(size) x[bsize / (size >> 3)]
++#define UNIT_CAST(x,size)           ((UI_TYPE(size) )(x))  
++#define UPTR_CAST(x,size)           ((UI_TYPE(size)*)(x))
++
++#if defined(__cplusplus)
++}
++#endif
++
++#endif
+diff --git a/data.c b/data.c
+index 46b2569..303ae28 100644
+--- a/data.c
++++ b/data.c
+@@ -1,804 +1,804 @@
+-#include <unistd.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <string.h>
+-#include <stdbool.h>
+-#include <openssl/evp.h>
+-#include <openssl/hmac.h>
+-#include <openssl/pkcs12.h>
+-#include <jansson.h>
+-#include "data.h"
+-#include <openssl/rand.h>
+-
+-#define NON_VAR_LENGTH 0     //TODO change me
+-
+-
+-
+-
+-void record_names_cleanup (Record* recList, size_t size){
+-    for(int i = 0;i < size; i++){
+-        free(recList[i].name);
+-    }
+-}
+-bool get_records(json_t* root, char* name, GuestType guest, Record ** recordList, size_t* recSize){
+-    if(root == NULL) return false;
+-    if (!json_is_object(json_object_get(root, "records"))) return false;
+-    root = json_object_get(root, "records");
+-
+-    if (guest == Employee){
+-        if (!json_is_object(json_object_get(root, "employee"))) return false;
+-        root = json_object_get(root, "employee");
+-    }else {
+-        if (!json_is_object(json_object_get(root, "guest"))) return false;
+-        root = json_object_get(root, "guest");
+-    }
+-    if (!json_is_array(json_object_get(root, name))) return false;
+-    root = json_object_get(root, name);
+-    *recSize = json_array_size(root);
+-    if(*recSize == 0) return false;
+-    Record* recList = *recordList;
+-    recList = calloc(sizeof(Record), *recSize);
+-    if(recList == NULL) return false;
+-    *recordList = recList;
+-    size_t index;
+-    json_t *recJSON;
+-    json_array_foreach(root, index, recJSON) {
+-        Record* r = &recList[index];
+-
+-        //timestamp
+-        json_t* temp = json_object_get(recJSON,"timestamp");
+-        if(!json_is_integer(temp)){
+-            record_names_cleanup(recList, index);
+-            free(recList);
+-            return false;
+-        } 
+-        r->timestamp = (long)json_integer_value(temp);
+-        //guestType
+-        temp = json_object_get(recJSON,"guestType");
+-        if(!json_is_integer(temp)){
+-            record_names_cleanup(recList, index);
+-            free(recList);
+-            return false;
+-        }
+-        int guestType = (int)json_integer_value(temp); 
+-        if(guestType == 0){
+-            r->guestType = Employee;
+-        }else{
+-            r->guestType = Guest;
+-        }
+-        //actionType
+-        temp = json_object_get(recJSON,"actionType");
+-        if(!json_is_integer(temp)){
+-            record_names_cleanup(recList, index);
+-            free(recList);
+-            return false;
+-        }
+-        int actionType = (int)json_integer_value(temp); 
+-        if(actionType == 0){
+-            r->actionType = Arrived;
+-        }else{
+-            r->actionType = Left;
+-        }
+-        //name
+-        temp = json_object_get(recJSON,"name");
+-        if(!json_is_string(temp)){
+-            record_names_cleanup(recList, index);
+-            free(recList);
+-            return false;
+-        }
+-        int nameLen = json_string_length(temp);
+-        r->name = calloc(sizeof(char), nameLen+1);
+-        if(r->name == NULL){
+-            record_names_cleanup(recList, index);
+-            free(recList);
+-            return false;
+-        }
+-        memcpy(r->name, json_string_value(temp), nameLen);
+-        //room
+-        temp = json_object_get(recJSON,"room");
+-        if(!json_is_integer(temp)){
+-            record_names_cleanup(recList, index+1);
+-            free(recList);
+-            return false;
+-        } 
+-        r->room = (long)json_integer_value(temp);
+-    }
+-    return true;
+-}
+-bool get_all_type_records(json_t* root, GuestType guest, Record ** recordList, size_t* recSize){
+-    if(root == NULL) return false;
+-    if (!json_is_object(json_object_get(root, "records"))) return false;
+-    root = json_object_get(root, "records");
+-
+-    if (guest == Employee){
+-        if (!json_is_object(json_object_get(root, "employee"))) return false;
+-        root = json_object_get(root, "employee");
+-    }else {
+-        if (!json_is_object(json_object_get(root, "guest"))) return false;
+-        root = json_object_get(root, "guest");
+-    }
+-
+-    const char *key;
+-    json_t *value;
+-    void * iter = json_object_iter(root);
+-    if(iter == NULL){
+-        return false;
+-    }
+-
+-
+-    Record* recList = *recordList;
+-    recList = malloc(1);
+-    if(recList == NULL) return false;
+-    *recSize = 0;
+-
+-    while(iter){
+-
+-        value = json_object_iter_value(iter);
+-        if (!json_is_array(value)) continue;
+-        int arraySize = json_array_size(value);
+-        if(arraySize == 0) return false;
+-
+-        Record* tempRecList = realloc(recList, sizeof(Record)*(*recSize+arraySize));
+-        if(tempRecList == NULL) {
+-            free(recList);
+-            return false;
+-        }
+-        recList = tempRecList+(*recSize);
+-        *recSize+=arraySize;
+-        size_t index;
+-        json_t *recJSON;
+-        json_array_foreach(value, index, recJSON) {
+-            Record* r = &recList[index]; 
+-            //timestamp
+-            json_t* temp = json_object_get(recJSON,"timestamp");
+-            if(!json_is_integer(temp)){
+-                record_names_cleanup(recList, index);
+-                free(recList);
+-                return false;
+-            } 
+-            r->timestamp = (long)json_integer_value(temp);
+-            //guestType
+-            temp = json_object_get(recJSON,"guestType");
+-            if(!json_is_integer(temp)){
+-                record_names_cleanup(recList, index);
+-                free(recList);
+-                return false;
+-            }
+-            int guestType = (int)json_integer_value(temp); 
+-            if(guestType == 0){
+-                r->guestType = Employee;
+-            }else{
+-                r->guestType = Guest;
+-            }
+-            //actionType
+-            temp = json_object_get(recJSON,"actionType");
+-            if(!json_is_integer(temp)){
+-                record_names_cleanup(recList, index);
+-                free(recList);
+-                return false;
+-            }
+-            int actionType = (int)json_integer_value(temp); 
+-            if(actionType == 0){
+-                r->actionType = Arrived;
+-            }else{
+-                r->actionType = Left;
+-            }
+-            //name
+-            temp = json_object_get(recJSON,"name");
+-            if(!json_is_string(temp)){
+-                record_names_cleanup(recList, index);
+-                free(recList);
+-                return false;
+-            }
+-            int nameLen = json_string_length(temp);
+-            r->name = calloc(sizeof(char), nameLen+1);
+-            if(r->name == NULL){
+-                record_names_cleanup(recList, index);
+-                free(recList);
+-                return false;
+-            }
+-            memcpy(r->name, json_string_value(temp), nameLen);
+-            //room
+-            temp = json_object_get(recJSON,"room");
+-            if(!json_is_integer(temp)){
+-                record_names_cleanup(recList, index+1);
+-                free(recList);
+-                return false;
+-            } 
+-            r->room = (long)json_integer_value(temp);
+-        }
+-        
+-        recList = tempRecList;
+-        *recordList = recList;
+-        iter = json_object_iter_next(root, iter);
+-    }
+-        
+-    return true;
+-}
+-bool get_all_records(json_t* root, Record ** recordList, size_t* recSize){
+-    Record *employeeList;
+-    size_t employeeSize;
+-    if(!get_all_type_records(root, Employee, &employeeList, &employeeSize)){
+-        employeeSize = 0;
+-        employeeList = malloc(1);
+-        if(employeeList == NULL) return false;
+-    }
+-    Record *guestList;
+-    size_t guestSize;
+-    if(!get_all_type_records(root, Guest, &guestList, &guestSize)){
+-        if(employeeSize == 0){
+-            free(employeeList);
+-            return false;
+-        }else{
+-            *recordList = employeeList;
+-            *recSize = employeeSize;
+-            return true;
+-        }
+-    }
+-
+-    Record* recList = realloc(employeeList, sizeof(Record)*(employeeSize + guestSize));
+-
+-    if(recList == NULL){
+-        free(employeeList);
+-        free(guestList);
+-        return false;
+-    }
+-    memcpy(recList + employeeSize, guestList, sizeof(Record)*guestSize);
+-    *recordList = recList;
+-    *recSize = employeeSize + guestSize; 
+-    return true;
+-}
+-int get_latest_timestamp(json_t* root){
+-    if(root == NULL) return false;
+-    if (!json_is_integer(json_object_get(root, "timestamp"))) return -1;
+-    return (int)json_integer_value(json_object_get(root, "timestamp"));
+-}
+-bool get_latest_record(json_t* root, char* name, GuestType guest, Record ** record){
+-    if(root == NULL) return false;
+-    if (!json_is_object(json_object_get(root, "records"))) return false;
+-    root = json_object_get(root, "records");
+-
+-    if (guest == Employee){
+-        if (!json_is_object(json_object_get(root, "employee"))) return false;
+-        root = json_object_get(root, "employee");
+-    }else {
+-        if (!json_is_object(json_object_get(root, "guest"))) return false;
+-        root = json_object_get(root, "guest");
+-    }
+-    json_t * userArray = json_object_get(root, name);
+-    if (userArray == NULL){
+-        *record = NULL;
+-        return true;
+-    }
+-    if (!json_is_array(userArray)) return false;
+-    root = json_object_get(root, name);
+-    *record = calloc(sizeof(Record), 1);
+-
+-    size_t size = json_array_size(root);
+-    if (size == 0) return false;
+-    json_t *recJSON = json_array_get(root, size - 1);
+-    Record* r = *record;
+-    //timestamp
+-    json_t* temp = json_object_get(recJSON,"timestamp");
+-    if(!json_is_integer(temp)){
+-        
+-        return false;
+-    } 
+-    r->timestamp = (long)json_integer_value(temp);
+-    //guestType
+-    temp = json_object_get(recJSON,"guestType");
+-    if(!json_is_integer(temp)){
+-        
+-        return false;
+-    }
+-    int guestType = (int)json_integer_value(temp); 
+-    if(guestType == 0){
+-        r->guestType = Employee;
+-    }else{
+-        r->guestType = Guest;
+-    }
+-    //actionType
+-    temp = json_object_get(recJSON,"actionType");
+-    if(!json_is_integer(temp)){
+-        
+-        return false;
+-    }
+-    int actionType = (int)json_integer_value(temp); 
+-    if(actionType == 0){
+-        r->actionType = Arrived;
+-    }else{
+-        r->actionType = Left;
+-    }
+-    //name
+-    temp = json_object_get(recJSON,"name");
+-    if(!json_is_string(temp)){
+-        
+-        return false;
+-    }
+-    int nameLen = json_string_length(temp);
+-    r->name = calloc(sizeof(char), nameLen+1);
+-    if(r->name == NULL){
+-        
+-        return false;
+-    }
+-    memcpy(r->name, json_string_value(temp), nameLen);
+-    //room
+-    temp = json_object_get(recJSON,"room");
+-    if(!json_is_integer(temp)){
+-        
+-        return false;
+-    } 
+-    r->room = (long)json_integer_value(temp);
+-    return true;
+-}
+-bool insert_rec(json_t *root, Record* r){
+-    if(root == NULL) return false;
+-    if (!json_is_integer(json_object_get(root, "timestamp"))
+-      && json_object_set_new(root, "timestamp", json_integer(r->timestamp)) == -1) {
+-      return false;
+-    }
+-
+-    if (!json_is_object(json_object_get(root, "records")) 
+-        && json_object_set_new(root, "records", json_object()) == -1){
+-        return false;
+-    }
+-    
+-
+-    root = json_object_get(root, "records");
+-    if (!json_is_object(json_object_get(root, "employee")) 
+-        && json_object_set_new(root, "employee", json_object()) == -1){
+-        return false;
+-    }
+-    if (!json_is_object(json_object_get(root, "guest")) 
+-        && json_object_set_new(root, "guest", json_object()) == -1){
+-        return false;
+-    }
+-    if (r->guestType == Employee){
+-        root = json_object_get(root, "employee");
+-    }else {
+-        root = json_object_get(root, "guest");
+-    }
+-    const char *name = r->name;
+-    if (!json_is_array(json_object_get(root, name) )
+-        && json_object_set_new(root, name, json_array()) == -1){
+-        return false;
+-    }
+-    root = json_object_get(root, name);
+-    json_t* recJSON = json_object();
+-    json_object_set_new(recJSON, "timestamp", json_integer(r->timestamp));
+-    if(r->guestType == Employee){
+-        json_object_set_new(recJSON, "guestType", json_integer(0));
+-    }else{
+-        json_object_set_new(recJSON, "guestType", json_integer(1));
+-    }
+-    if(r->actionType == Arrived){
+-        json_object_set_new(recJSON, "actionType", json_integer(0));
+-    }else{
+-        json_object_set_new(recJSON, "actionType", json_integer(1));
+-    }
+-    json_object_set_new(recJSON, "room", json_integer(r->room));
+-    json_object_set_new(recJSON, "name", json_string(r->name));
+-
+-    json_array_append_new(root, recJSON);
+-    return true;}
+-
+-json_t *json_from_buf(char* buffer, size_t bufLen){
+-    json_error_t error;
+-    return json_loadb(buffer, bufLen, 0, &error);
+-}   
+-const char * buf_from_json(json_t *root){
+-    char * buf = json_dumps(root, 0);
+-    json_decref(root);
+-    return buf;
+-}
+-
+-
+-
+-
+-int compute_record_size(Record *R) {
+-  int len = 0;
+-  //TODO do stuff
+-  
+-  return len;
+-}
+-
+-//serialize (struct -> json)
+-Buffer print_record(Record *R) {
+-  Buffer  B = {0};
+- 
+-  //TODO Code this
+-  
+-
+-  return B;
+-}
+-
+-//produce A | B
+-Buffer concat_buffs(Buffer *A, Buffer *B) {
+-  Buffer  C = {0}; 
+-  //TODO Code this
+-  return C;
+-}
+-
+-bool write_to_path (char *path, SecInfo * s){
+-    int file = open(path, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR | S_IWUSR); 
+-    if(file == -1){
+-        return false;
+-    }
+-    if(write(file, s->iv, 16) != 16){
+-        close(file);
+-        return false;
+-    }
+-    if(write(file, s->salt, 16) != 16){
+-        close(file);
+-        return false;
+-    }
+-    if(write(file, s->signature, 32) != 32){
+-        close(file);
+-        return false;
+-    }
+-    if(write(file, s->record, s->bufSize) != s->bufSize){
+-        close(file);
+-        return false;
+-    }
+-    return true;}
+-
+-
+-SecInfo * read_from_path (char * path){
+-    int file = open(path, O_RDONLY, 0);
+-    //printf("after open\n");
+-    if(file == -1){
+-        return NULL;
+-    }
+-    SecInfo* s = malloc(sizeof(SecInfo));
+-    if(s == NULL){
+-        return NULL;
+-    }
+-    if(read(file, s->iv, 16) != 16){
+-        free(s);
+-        close(file);
+-        return NULL;
+-    }
+-    if(read(file, s->salt, 16) != 16){
+-        free(s);
+-        close(file);
+-        return NULL;
+-    }
+-    if(read(file, s->signature, 32) != 32){
+-        free(s);
+-        close(file);
+-        return NULL;
+-    }
+-    int bufSize = 64;
+-    char * jsonBuffer = malloc(bufSize);
+-    if(jsonBuffer == NULL) {
+-        free(s);
+-        close(file);
+-        return NULL;
+-    }
+-    int amountRead = 0;
+-    //printf("before while\n");
+-    while (true){
+-        if (amountRead + 64 > bufSize) {
+-            bufSize *= 2;
+-            char *reallocBuffer = realloc(jsonBuffer, bufSize);
+-            if (reallocBuffer == NULL) {
+-                free(jsonBuffer); 
+-                free(s); 
+-                close(file); 
+-                return NULL;
+-            }
+-            jsonBuffer = reallocBuffer; 
+-        }
+-        int currRead = read(file, jsonBuffer + amountRead, 64);
+-
+-        if (currRead <= 0) break; 
+-
+-        amountRead += currRead;
+-    }
+-    //printf("after while\n");
+-    close(file);
+-    s->bufSize = amountRead;
+-    s->record = jsonBuffer;
+-    return s;}
+-
+-
+-
+-
+-
+-
+-int read_records_from_path(char *path, unsigned char *key, Record **outbuf, unsigned int *outnum) {
+-  *outnum = 0;
+-  *outbuf = NULL;
+-
+-  //read in a file 
+-  //Buffer  B = read_from_path(path, key);
+-
+-  //TODO Code this
+-  
+-  return 0;
+-}
+-
+-
+-
+-//SIGN AND VERIFY FUNCTIONS:
+-
+-//sign
+-//note: caller is responsible for freeing returned string
+-//returns mac in hex to make it easier to append to log
+-char *sign(unsigned char *data, unsigned int data_len,
+-           unsigned char *token, unsigned int token_len) {
+-  
+-  unsigned char key[32];
+-  unsigned int key_len = 32;
+-  //need to generate 32 length hmac key (token is not constant length)
+-  PKCS5_PBKDF2_HMAC((const char *)token, token_len, NULL, 0, 10000, EVP_sha256(), key_len, key);
+-  
+-  unsigned char mac[32];
+-  unsigned int mac_len;
+-
+-  if (!HMAC(EVP_sha256(), key, key_len, data, data_len, mac, &mac_len)) {
+-      return NULL; //error in calculation
+-  }
+-  /*
+-  //allocate space for hex string (2 chars per byte + null terminator)
+-  char *hex_mac = malloc(mac_len * 2 + 1);
+-  if (!hex_mac) return NULL;
+-
+-  //convert binary to hex
+-  for (unsigned int i = 0; i < mac_len; i++) {
+-      sprintf(&hex_mac[i * 2], "%02x", mac[i]);
+-  }
+-  hex_mac[mac_len * 2] = '\0';
+-
+-  return hex_mac;
+-  */
+-
+-  //return binary hmac
+-  char * binary_mac = malloc(32);
+-  if (! binary_mac) return NULL;
+-
+-  memcpy(binary_mac, mac, 32);
+-  return binary_mac;
+-}
+-
+-//verify
+-//returns 0 if macs are not equal, 1 if macs are equal
+-int verify(unsigned char *data, unsigned int data_len,
+-           unsigned char *token, unsigned int token_len,
+-           unsigned char *mac) {
+-
+-  //generate new hmac
+-  char *calculated_mac = sign(data, data_len, token, token_len);
+-  if (calculated_mac == NULL){
+-    return 0; //gen hmac failed
+-  }
+-  
+-  //compare calculated_mac & mac
+-  /*
+-  if (calculated_mac == NULL && strcmp(calculated_mac, (const char *)mac) != 0) {
+-    free(calculated_mac);
+-    return 0; //macs are not equal
+-  }
+-  */
+-  if (memcmp(calculated_mac, (const char *)mac, 32) != 0) {
+-    free(calculated_mac);
+-    return 0; //macs are not equal
+-  }
+-
+-  free(calculated_mac);
+-  return 1; //macs are equal
+-}
+-
+-SecInfo *enc(const char *token, Buffer *json_data) {
+-    //printf("start enc\n");
+-    SecInfo *si = malloc(sizeof(SecInfo));
+-    if (!si) return NULL;
+-
+-    unsigned char key[32];
+-    unsigned char *plaintext = (unsigned char *)json_data->Buf;
+-    unsigned long plaintext_len = json_data->Length;
+-
+-
+-    //gen IV + Key(salt+ token)
+-    RAND_bytes((unsigned char *)si->salt, 16);
+-    RAND_bytes((unsigned char *)si->iv, 16);
+-    if (!PKCS5_PBKDF2_HMAC(token,strlen(token),(unsigned char *)si->salt, 16, 10000, EVP_sha256(), 32, key )){
+-        fprintf(stderr, "enc error: PBKDF2\n"); 
+-        free(si);
+-        return NULL;
+-    }
+-
+-
+-    //encrypt
+-    unsigned char *ciphertext = malloc(plaintext_len);
+-    int len = 0;
+-    int ciphertext_len = 0;
+-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+-    if (!ctx || !ciphertext ){
+-        fprintf(stderr, "enc error: ctx_new\n"); 
+-        free(ciphertext);
+-        free(si);
+-        return NULL;
+-    }
+-
+-    if (EVP_EncryptInit_ex(ctx, EVP_aes_256_ctr(), NULL, key, (unsigned char *)si->iv ) != 1){
+-        fprintf(stderr, "enc error: EVP_ini\n"); 
+-        EVP_CIPHER_CTX_free(ctx);
+-        free(ciphertext);
+-        free(si);
+-        return NULL;
+-    }
+-
+-
+-    if (EVP_EncryptUpdate(ctx,ciphertext,&len, plaintext, plaintext_len ) != 1){
+-        fprintf(stderr, "enc error: EVP_update\n"); 
+-        EVP_CIPHER_CTX_free(ctx);
+-        free(ciphertext);
+-        free(si);
+-        return NULL;
+-    }
+-
+-    ciphertext_len = len;
+-    if (EVP_EncryptFinal_ex(ctx, ciphertext + len, &len) != 1){
+-        fprintf(stderr, "enc error: EVP_final\n"); 
+-        EVP_CIPHER_CTX_free(ctx);
+-        free(ciphertext);
+-        free(si);
+-        return NULL;
+-    }
+-    ciphertext_len += len;
+-
+-    // store back
+-    si->bufSize = (unsigned int)json_data->Length;
+-    si->record = (char *)ciphertext;
+-    EVP_CIPHER_CTX_free(ctx);
+-
+-    return si;
+-}
+-
+-Buffer dec(const char *token, SecInfo *si) {
+-    //printf("start dec\n");
+-    unsigned char key[32];
+-    Buffer result = {NULL, 0};
+-    
+-
+-    //gen key
+-    if (!PKCS5_PBKDF2_HMAC((const char *)token,strlen(token), (unsigned char*)si->salt, 16, 10000, EVP_sha256(), 32, key )){
+-        fprintf(stderr, "error: PBKDF2\n"); 
+-        return result;
+-    }
+-
+-    //decrypt c1
+-    unsigned char *plaintext = malloc(si->bufSize);
+-
+-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+-    if (!ctx){
+-        free(plaintext);
+-        fprintf(stderr, "dec error: ctx_new\n"); 
+-        return result;
+-    }
+-
+-    if (EVP_DecryptInit_ex(ctx, EVP_aes_256_ctr(), NULL, key, (unsigned char*)si->iv) != 1){
+-        EVP_CIPHER_CTX_free(ctx);
+-        fprintf(stderr, "enc error: EVP_ini\n"); 
+-        free(plaintext);
+-        return result;
+-    }
+-
+-    int len = 0;
+-    int plaintext_len = 0;
+-
+-    if (EVP_DecryptUpdate(ctx, plaintext, &len, (unsigned char*)si->record, si->bufSize) != 1) { 
+-        EVP_CIPHER_CTX_free(ctx);
+-        fprintf(stderr, "dec error: EVP_update\n"); 
+-        free(plaintext);
+-        return result;
+-    }
+-    plaintext_len = len;
+-
+-    if (EVP_DecryptFinal_ex(ctx, plaintext + len, &len) != 1) {
+-        EVP_CIPHER_CTX_free(ctx);
+-        fprintf(stderr, "dec error: EVP_final\n");
+-        free(plaintext);
+-        return result;        
+-    }
+-    plaintext_len += len;
+-    EVP_CIPHER_CTX_free(ctx);
+-    //printf("Decrypted content: %.*s\n", 10, plaintext);
+-    result.Buf = plaintext;
+-    result.Length = plaintext_len;
+-
+-    return result; 
+-
+-}
+-
+-bool encrypt_then_sign(char *path, char *token, unsigned int token_len, unsigned char *data, unsigned long data_len) {
+-    //printf("start encrypt_then_sign\n");
+-
+-    //encrypt the plaintext log file
+-    Buffer plaintext; 
+-    plaintext.Buf = data;
+-    plaintext.Length = data_len;
+-    SecInfo *encrypted_si = enc(token, &plaintext);
+-    if (!encrypted_si){return false;}
+-
+-
+-    //sign the Encrypted Data + IV + Salt
+-    size_t data_to_sign_len = 16 + 16 + encrypted_si->bufSize;
+-    char *sign_buffer = malloc(data_to_sign_len);
+-    if(!sign_buffer){
+-        free(encrypted_si->record);
+-        free(encrypted_si);
+-        return false;
+-    }
+-
+-    memcpy(sign_buffer, encrypted_si->iv, 16);
+-    memcpy(sign_buffer + 16, encrypted_si->salt, 16);
+-    memcpy(sign_buffer + 32, encrypted_si->record, encrypted_si->bufSize);
+-
+-    //sign
+-    char *mac = sign((unsigned char *)sign_buffer, data_to_sign_len, (unsigned char *)token, token_len);
+-
+-    //copy mac into the signature field
+-    memcpy(encrypted_si->signature, mac, 32);
+-
+-
+-    //write the encrypted and signed log back to path
+-    bool success = write_to_path(path, encrypted_si);
+-
+-    //cleanup
+-    free(sign_buffer);
+-    free(encrypted_si->record);
+-    free(encrypted_si);
+-
+-    return success;
+-}
+-
+-Buffer verify_then_decrypt(char *path, unsigned char *token, unsigned int token_len) {
+-    //printf("start verify_then_decrypt: %s\n", path);
+-    //printf("Path: %s, Token: %s\n", path, token);
+-    Buffer result = {NULL, 0};
+-
+-    //load data from log file
+-    SecInfo *si = read_from_path(path);
+-    if(si == NULL){
+-        return result;
+-    }
+-    //printf("read_from_path. bufSize: %d\n", si->bufSize);
+-
+-    //extract parameter 
+-    unsigned int data_len = 16 + 16 + si->bufSize;
+-    unsigned char *data = malloc(data_len);
+-
+-    memcpy(data, si->iv, 16);
+-    memcpy(data + 16, si->salt, 16);
+-    memcpy(data + 32, si->record, si->bufSize);
+-
+-    //verify
+-    int verify_result = verify(data, data_len, token, token_len, (unsigned char *)si->signature);
+-    //printf("verify_result: %d \n", verify_result);
+-
+-    //if verify returns 0, the macs are not equal
+-    if (verify_result == 0) {
+-        free(data);
+-        free(si->record);
+-        free(si);
+-        result.Length= (unsigned long)-1;
+-        //printf("Integrity violation %lu\n",result.Length);
+-        return result;
+-    }
+-    
+-    //decrypt
+-    result = dec((const char *)token, si);
+-    //printf("dec finished. Plaintext Length: %d\n", result.Length);
+-
+-    //cleanup
+-    free(data);
+-    free(si->record);
+-    free(si);
+-
+-    return result;
+-}
++#include <unistd.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <stdbool.h>
++#include <openssl/evp.h>
++#include <openssl/hmac.h>
++#include <openssl/pkcs12.h>
++#include <jansson.h>
++#include "data.h"
++#include <openssl/rand.h>
++
++#define NON_VAR_LENGTH 0     //TODO change me
++
++
++
++
++void record_names_cleanup (Record* recList, size_t size){
++    for(int i = 0;i < size; i++){
++        free(recList[i].name);
++    }
++}
++bool get_records(json_t* root, char* name, GuestType guest, Record ** recordList, size_t* recSize){
++    if(root == NULL) return false;
++    if (!json_is_object(json_object_get(root, "records"))) return false;
++    root = json_object_get(root, "records");
++
++    if (guest == Employee){
++        if (!json_is_object(json_object_get(root, "employee"))) return false;
++        root = json_object_get(root, "employee");
++    }else {
++        if (!json_is_object(json_object_get(root, "guest"))) return false;
++        root = json_object_get(root, "guest");
++    }
++    if (!json_is_array(json_object_get(root, name))) return false;
++    root = json_object_get(root, name);
++    *recSize = json_array_size(root);
++    if(*recSize == 0) return false;
++    Record* recList = *recordList;
++    recList = calloc(sizeof(Record), *recSize);
++    if(recList == NULL) return false;
++    *recordList = recList;
++    size_t index;
++    json_t *recJSON;
++    json_array_foreach(root, index, recJSON) {
++        Record* r = &recList[index];
++
++        //timestamp
++        json_t* temp = json_object_get(recJSON,"timestamp");
++        if(!json_is_integer(temp)){
++            record_names_cleanup(recList, index);
++            free(recList);
++            return false;
++        } 
++        r->timestamp = (long)json_integer_value(temp);
++        //guestType
++        temp = json_object_get(recJSON,"guestType");
++        if(!json_is_integer(temp)){
++            record_names_cleanup(recList, index);
++            free(recList);
++            return false;
++        }
++        int guestType = (int)json_integer_value(temp); 
++        if(guestType == 0){
++            r->guestType = Employee;
++        }else{
++            r->guestType = Guest;
++        }
++        //actionType
++        temp = json_object_get(recJSON,"actionType");
++        if(!json_is_integer(temp)){
++            record_names_cleanup(recList, index);
++            free(recList);
++            return false;
++        }
++        int actionType = (int)json_integer_value(temp); 
++        if(actionType == 0){
++            r->actionType = Arrived;
++        }else{
++            r->actionType = Left;
++        }
++        //name
++        temp = json_object_get(recJSON,"name");
++        if(!json_is_string(temp)){
++            record_names_cleanup(recList, index);
++            free(recList);
++            return false;
++        }
++        int nameLen = json_string_length(temp);
++        r->name = calloc(sizeof(char), nameLen+1);
++        if(r->name == NULL){
++            record_names_cleanup(recList, index);
++            free(recList);
++            return false;
++        }
++        memcpy(r->name, json_string_value(temp), nameLen);
++        //room
++        temp = json_object_get(recJSON,"room");
++        if(!json_is_integer(temp)){
++            record_names_cleanup(recList, index+1);
++            free(recList);
++            return false;
++        } 
++        r->room = (long)json_integer_value(temp);
++    }
++    return true;
++}
++bool get_all_type_records(json_t* root, GuestType guest, Record ** recordList, size_t* recSize){
++    if(root == NULL) return false;
++    if (!json_is_object(json_object_get(root, "records"))) return false;
++    root = json_object_get(root, "records");
++
++    if (guest == Employee){
++        if (!json_is_object(json_object_get(root, "employee"))) return false;
++        root = json_object_get(root, "employee");
++    }else {
++        if (!json_is_object(json_object_get(root, "guest"))) return false;
++        root = json_object_get(root, "guest");
++    }
++
++    const char *key;
++    json_t *value;
++    void * iter = json_object_iter(root);
++    if(iter == NULL){
++        return false;
++    }
++
++
++    Record* recList = *recordList;
++    recList = malloc(1);
++    if(recList == NULL) return false;
++    *recSize = 0;
++
++    while(iter){
++
++        value = json_object_iter_value(iter);
++        if (!json_is_array(value)) continue;
++        int arraySize = json_array_size(value);
++        if(arraySize == 0) return false;
++
++        Record* tempRecList = realloc(recList, sizeof(Record)*(*recSize+arraySize));
++        if(tempRecList == NULL) {
++            free(recList);
++            return false;
++        }
++        recList = tempRecList+(*recSize);
++        *recSize+=arraySize;
++        size_t index;
++        json_t *recJSON;
++        json_array_foreach(value, index, recJSON) {
++            Record* r = &recList[index]; 
++            //timestamp
++            json_t* temp = json_object_get(recJSON,"timestamp");
++            if(!json_is_integer(temp)){
++                record_names_cleanup(recList, index);
++                free(recList);
++                return false;
++            } 
++            r->timestamp = (long)json_integer_value(temp);
++            //guestType
++            temp = json_object_get(recJSON,"guestType");
++            if(!json_is_integer(temp)){
++                record_names_cleanup(recList, index);
++                free(recList);
++                return false;
++            }
++            int guestType = (int)json_integer_value(temp); 
++            if(guestType == 0){
++                r->guestType = Employee;
++            }else{
++                r->guestType = Guest;
++            }
++            //actionType
++            temp = json_object_get(recJSON,"actionType");
++            if(!json_is_integer(temp)){
++                record_names_cleanup(recList, index);
++                free(recList);
++                return false;
++            }
++            int actionType = (int)json_integer_value(temp); 
++            if(actionType == 0){
++                r->actionType = Arrived;
++            }else{
++                r->actionType = Left;
++            }
++            //name
++            temp = json_object_get(recJSON,"name");
++            if(!json_is_string(temp)){
++                record_names_cleanup(recList, index);
++                free(recList);
++                return false;
++            }
++            int nameLen = json_string_length(temp);
++            r->name = calloc(sizeof(char), nameLen+1);
++            if(r->name == NULL){
++                record_names_cleanup(recList, index);
++                free(recList);
++                return false;
++            }
++            memcpy(r->name, json_string_value(temp), nameLen);
++            //room
++            temp = json_object_get(recJSON,"room");
++            if(!json_is_integer(temp)){
++                record_names_cleanup(recList, index+1);
++                free(recList);
++                return false;
++            } 
++            r->room = (long)json_integer_value(temp);
++        }
++        
++        recList = tempRecList;
++        *recordList = recList;
++        iter = json_object_iter_next(root, iter);
++    }
++        
++    return true;
++}
++bool get_all_records(json_t* root, Record ** recordList, size_t* recSize){
++    Record *employeeList;
++    size_t employeeSize;
++    if(!get_all_type_records(root, Employee, &employeeList, &employeeSize)){
++        employeeSize = 0;
++        employeeList = malloc(1);
++        if(employeeList == NULL) return false;
++    }
++    Record *guestList;
++    size_t guestSize;
++    if(!get_all_type_records(root, Guest, &guestList, &guestSize)){
++        if(employeeSize == 0){
++            free(employeeList);
++            return false;
++        }else{
++            *recordList = employeeList;
++            *recSize = employeeSize;
++            return true;
++        }
++    }
++
++    Record* recList = realloc(employeeList, sizeof(Record)*(employeeSize + guestSize));
++
++    if(recList == NULL){
++        free(employeeList);
++        free(guestList);
++        return false;
++    }
++    memcpy(recList + employeeSize, guestList, sizeof(Record)*guestSize);
++    *recordList = recList;
++    *recSize = employeeSize + guestSize; 
++    return true;
++}
++int get_latest_timestamp(json_t* root){
++    if(root == NULL) return false;
++    if (!json_is_integer(json_object_get(root, "timestamp"))) return -1;
++    return (int)json_integer_value(json_object_get(root, "timestamp"));
++}
++bool get_latest_record(json_t* root, char* name, GuestType guest, Record ** record){
++    if(root == NULL) return false;
++    if (!json_is_object(json_object_get(root, "records"))) return false;
++    root = json_object_get(root, "records");
++
++    if (guest == Employee){
++        if (!json_is_object(json_object_get(root, "employee"))) return false;
++        root = json_object_get(root, "employee");
++    }else {
++        if (!json_is_object(json_object_get(root, "guest"))) return false;
++        root = json_object_get(root, "guest");
++    }
++    json_t * userArray = json_object_get(root, name);
++    if (userArray == NULL){
++        *record = NULL;
++        return true;
++    }
++    if (!json_is_array(userArray)) return false;
++    root = json_object_get(root, name);
++    *record = calloc(sizeof(Record), 1);
++
++    size_t size = json_array_size(root);
++    if (size == 0) return false;
++    json_t *recJSON = json_array_get(root, size - 1);
++    Record* r = *record;
++    //timestamp
++    json_t* temp = json_object_get(recJSON,"timestamp");
++    if(!json_is_integer(temp)){
++        
++        return false;
++    } 
++    r->timestamp = (long)json_integer_value(temp);
++    //guestType
++    temp = json_object_get(recJSON,"guestType");
++    if(!json_is_integer(temp)){
++        
++        return false;
++    }
++    int guestType = (int)json_integer_value(temp); 
++    if(guestType == 0){
++        r->guestType = Employee;
++    }else{
++        r->guestType = Guest;
++    }
++    //actionType
++    temp = json_object_get(recJSON,"actionType");
++    if(!json_is_integer(temp)){
++        
++        return false;
++    }
++    int actionType = (int)json_integer_value(temp); 
++    if(actionType == 0){
++        r->actionType = Arrived;
++    }else{
++        r->actionType = Left;
++    }
++    //name
++    temp = json_object_get(recJSON,"name");
++    if(!json_is_string(temp)){
++        
++        return false;
++    }
++    int nameLen = json_string_length(temp);
++    r->name = calloc(sizeof(char), nameLen+1);
++    if(r->name == NULL){
++        
++        return false;
++    }
++    memcpy(r->name, json_string_value(temp), nameLen);
++    //room
++    temp = json_object_get(recJSON,"room");
++    if(!json_is_integer(temp)){
++        
++        return false;
++    } 
++    r->room = (long)json_integer_value(temp);
++    return true;
++}
++bool insert_rec(json_t *root, Record* r){
++    if(root == NULL) return false;
++    if (!json_is_integer(json_object_get(root, "timestamp"))
++      && json_object_set_new(root, "timestamp", json_integer(r->timestamp)) == -1) {
++      return false;
++    }
++
++    if (!json_is_object(json_object_get(root, "records")) 
++        && json_object_set_new(root, "records", json_object()) == -1){
++        return false;
++    }
++    
++
++    root = json_object_get(root, "records");
++    if (!json_is_object(json_object_get(root, "employee")) 
++        && json_object_set_new(root, "employee", json_object()) == -1){
++        return false;
++    }
++    if (!json_is_object(json_object_get(root, "guest")) 
++        && json_object_set_new(root, "guest", json_object()) == -1){
++        return false;
++    }
++    if (r->guestType == Employee){
++        root = json_object_get(root, "employee");
++    }else {
++        root = json_object_get(root, "guest");
++    }
++    const char *name = r->name;
++    if (!json_is_array(json_object_get(root, name) )
++        && json_object_set_new(root, name, json_array()) == -1){
++        return false;
++    }
++    root = json_object_get(root, name);
++    json_t* recJSON = json_object();
++    json_object_set_new(recJSON, "timestamp", json_integer(r->timestamp));
++    if(r->guestType == Employee){
++        json_object_set_new(recJSON, "guestType", json_integer(0));
++    }else{
++        json_object_set_new(recJSON, "guestType", json_integer(1));
++    }
++    if(r->actionType == Arrived){
++        json_object_set_new(recJSON, "actionType", json_integer(0));
++    }else{
++        json_object_set_new(recJSON, "actionType", json_integer(1));
++    }
++    json_object_set_new(recJSON, "room", json_integer(r->room));
++    json_object_set_new(recJSON, "name", json_string(r->name));
++
++    json_array_append_new(root, recJSON);
++    return true;}
++
++json_t *json_from_buf(char* buffer, size_t bufLen){
++    json_error_t error;
++    return json_loadb(buffer, bufLen, 0, &error);
++}   
++const char * buf_from_json(json_t *root){
++    char * buf = json_dumps(root, 0);
++    json_decref(root);
++    return buf;
++}
++
++
++
++
++int compute_record_size(Record *R) {
++  int len = 0;
++  //TODO do stuff
++  
++  return len;
++}
++
++//serialize (struct -> json)
++Buffer print_record(Record *R) {
++  Buffer  B = {0};
++ 
++  //TODO Code this
++  
++
++  return B;
++}
++
++//produce A | B
++Buffer concat_buffs(Buffer *A, Buffer *B) {
++  Buffer  C = {0}; 
++  //TODO Code this
++  return C;
++}
++
++bool write_to_path (char *path, SecInfo * s){
++    int file = open(path, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR | S_IWUSR); 
++    if(file == -1){
++        return false;
++    }
++    if(write(file, s->iv, 16) != 16){
++        close(file);
++        return false;
++    }
++    if(write(file, s->salt, 16) != 16){
++        close(file);
++        return false;
++    }
++    if(write(file, s->signature, 32) != 32){
++        close(file);
++        return false;
++    }
++    if(write(file, s->record, s->bufSize) != s->bufSize){
++        close(file);
++        return false;
++    }
++    return true;}
++
++
++SecInfo * read_from_path (char * path){
++    int file = open(path, O_RDONLY, 0);
++    //printf("after open\n");
++    if(file == -1){
++        return NULL;
++    }
++    SecInfo* s = malloc(sizeof(SecInfo));
++    if(s == NULL){
++        return NULL;
++    }
++    if(read(file, s->iv, 16) != 16){
++        free(s);
++        close(file);
++        return NULL;
++    }
++    if(read(file, s->salt, 16) != 16){
++        free(s);
++        close(file);
++        return NULL;
++    }
++    if(read(file, s->signature, 32) != 32){
++        free(s);
++        close(file);
++        return NULL;
++    }
++    int bufSize = 64;
++    char * jsonBuffer = malloc(bufSize);
++    if(jsonBuffer == NULL) {
++        free(s);
++        close(file);
++        return NULL;
++    }
++    int amountRead = 0;
++    //printf("before while\n");
++    while (true){
++        if (amountRead + 64 > bufSize) {
++            bufSize *= 2;
++            char *reallocBuffer = realloc(jsonBuffer, bufSize);
++            if (reallocBuffer == NULL) {
++                free(jsonBuffer); 
++                free(s); 
++                close(file); 
++                return NULL;
++            }
++            jsonBuffer = reallocBuffer; 
++        }
++        int currRead = read(file, jsonBuffer + amountRead, 64);
++
++        if (currRead <= 0) break; 
++
++        amountRead += currRead;
++    }
++    //printf("after while\n");
++    close(file);
++    s->bufSize = amountRead;
++    s->record = jsonBuffer;
++    return s;}
++
++
++
++
++
++
++int read_records_from_path(char *path, unsigned char *key, Record **outbuf, unsigned int *outnum) {
++  *outnum = 0;
++  *outbuf = NULL;
++
++  //read in a file 
++  //Buffer  B = read_from_path(path, key);
++
++  //TODO Code this
++  
++  return 0;
++}
++
++
++
++//SIGN AND VERIFY FUNCTIONS:
++
++//sign
++//note: caller is responsible for freeing returned string
++//returns mac in hex to make it easier to append to log
++char *sign(unsigned char *data, unsigned int data_len,
++           unsigned char *token, unsigned int token_len) {
++  
++  unsigned char key[32];
++  unsigned int key_len = 32;
++  //need to generate 32 length hmac key (token is not constant length)
++  PKCS5_PBKDF2_HMAC((const char *)token, token_len, NULL, 0, 10000, EVP_sha256(), key_len, key);
++  
++  unsigned char mac[32];
++  unsigned int mac_len;
++
++  if (!HMAC(EVP_sha256(), key, key_len, data, data_len, mac, &mac_len)) {
++      return NULL; //error in calculation
++  }
++  /*
++  //allocate space for hex string (2 chars per byte + null terminator)
++  char *hex_mac = malloc(mac_len * 2 + 1);
++  if (!hex_mac) return NULL;
++
++  //convert binary to hex
++  for (unsigned int i = 0; i < mac_len; i++) {
++      sprintf(&hex_mac[i * 2], "%02x", mac[i]);
++  }
++  hex_mac[mac_len * 2] = '\0';
++
++  return hex_mac;
++  */
++
++  //return binary hmac
++  char * binary_mac = malloc(32);
++  if (! binary_mac) return NULL;
++
++  memcpy(binary_mac, mac, 32);
++  return binary_mac;
++}
++
++//verify
++//returns 0 if macs are not equal, 1 if macs are equal
++int verify(unsigned char *data, unsigned int data_len,
++           unsigned char *token, unsigned int token_len,
++           unsigned char *mac) {
++
++  //generate new hmac
++  char *calculated_mac = sign(data, data_len, token, token_len);
++  if (calculated_mac == NULL){
++    return 0; //gen hmac failed
++  }
++  
++  //compare calculated_mac & mac
++  /*
++  if (calculated_mac == NULL && strcmp(calculated_mac, (const char *)mac) != 0) {
++    free(calculated_mac);
++    return 0; //macs are not equal
++  }
++  */
++  if (memcmp(calculated_mac, (const char *)mac, 32) != 0) {
++    free(calculated_mac);
++    return 0; //macs are not equal
++  }
++
++  free(calculated_mac);
++  return 1; //macs are equal
++}
++
++SecInfo *enc(const char *token, Buffer *json_data) {
++    //printf("start enc\n");
++    SecInfo *si = malloc(sizeof(SecInfo));
++    if (!si) return NULL;
++
++    unsigned char key[32];
++    unsigned char *plaintext = (unsigned char *)json_data->Buf;
++    unsigned long plaintext_len = json_data->Length;
++
++
++    //gen IV + Key(salt+ token)
++    RAND_bytes((unsigned char *)si->salt, 16);
++    RAND_bytes((unsigned char *)si->iv, 16);
++    if (!PKCS5_PBKDF2_HMAC(token,strlen(token),(unsigned char *)si->salt, 16, 10000, EVP_sha256(), 32, key )){
++        fprintf(stderr, "enc error: PBKDF2\n"); 
++        free(si);
++        return NULL;
++    }
++
++
++    //encrypt
++    unsigned char *ciphertext = malloc(plaintext_len);
++    int len = 0;
++    int ciphertext_len = 0;
++    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
++    if (!ctx || !ciphertext ){
++        fprintf(stderr, "enc error: ctx_new\n"); 
++        free(ciphertext);
++        free(si);
++        return NULL;
++    }
++
++    if (EVP_EncryptInit_ex(ctx, EVP_aes_256_ctr(), NULL, key, (unsigned char *)si->iv ) != 1){
++        fprintf(stderr, "enc error: EVP_ini\n"); 
++        EVP_CIPHER_CTX_free(ctx);
++        free(ciphertext);
++        free(si);
++        return NULL;
++    }
++
++
++    if (EVP_EncryptUpdate(ctx,ciphertext,&len, plaintext, plaintext_len ) != 1){
++        fprintf(stderr, "enc error: EVP_update\n"); 
++        EVP_CIPHER_CTX_free(ctx);
++        free(ciphertext);
++        free(si);
++        return NULL;
++    }
++
++    ciphertext_len = len;
++    if (EVP_EncryptFinal_ex(ctx, ciphertext + len, &len) != 1){
++        fprintf(stderr, "enc error: EVP_final\n"); 
++        EVP_CIPHER_CTX_free(ctx);
++        free(ciphertext);
++        free(si);
++        return NULL;
++    }
++    ciphertext_len += len;
++
++    // store back
++    si->bufSize = (unsigned int)json_data->Length;
++    si->record = (char *)ciphertext;
++    EVP_CIPHER_CTX_free(ctx);
++
++    return si;
++}
++
++Buffer dec(const char *token, SecInfo *si) {
++    //printf("start dec\n");
++    unsigned char key[32];
++    Buffer result = {NULL, 0};
++    
++
++    //gen key
++    if (!PKCS5_PBKDF2_HMAC((const char *)token,strlen(token), (unsigned char*)si->salt, 16, 10000, EVP_sha256(), 32, key )){
++        fprintf(stderr, "error: PBKDF2\n"); 
++        return result;
++    }
++
++    //decrypt c1
++    unsigned char *plaintext = malloc(si->bufSize);
++
++    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
++    if (!ctx){
++        free(plaintext);
++        fprintf(stderr, "dec error: ctx_new\n"); 
++        return result;
++    }
++
++    if (EVP_DecryptInit_ex(ctx, EVP_aes_256_ctr(), NULL, key, (unsigned char*)si->iv) != 1){
++        EVP_CIPHER_CTX_free(ctx);
++        fprintf(stderr, "enc error: EVP_ini\n"); 
++        free(plaintext);
++        return result;
++    }
++
++    int len = 0;
++    int plaintext_len = 0;
++
++    if (EVP_DecryptUpdate(ctx, plaintext, &len, (unsigned char*)si->record, si->bufSize) != 1) { 
++        EVP_CIPHER_CTX_free(ctx);
++        fprintf(stderr, "dec error: EVP_update\n"); 
++        free(plaintext);
++        return result;
++    }
++    plaintext_len = len;
++
++    if (EVP_DecryptFinal_ex(ctx, plaintext + len, &len) != 1) {
++        EVP_CIPHER_CTX_free(ctx);
++        fprintf(stderr, "dec error: EVP_final\n");
++        free(plaintext);
++        return result;        
++    }
++    plaintext_len += len;
++    EVP_CIPHER_CTX_free(ctx);
++    //printf("Decrypted content: %.*s\n", 10, plaintext);
++    result.Buf = plaintext;
++    result.Length = plaintext_len;
++
++    return result; 
++
++}
++
++bool encrypt_then_sign(char *path, char *token, unsigned int token_len, unsigned char *data, unsigned long data_len) {
++    //printf("start encrypt_then_sign\n");
++
++    //encrypt the plaintext log file
++    Buffer plaintext; 
++    plaintext.Buf = data;
++    plaintext.Length = data_len;
++    SecInfo *encrypted_si = enc(token, &plaintext);
++    if (!encrypted_si){return false;}
++
++
++    //sign the Encrypted Data + IV + Salt
++    size_t data_to_sign_len = 16 + 16 + encrypted_si->bufSize;
++    char *sign_buffer = malloc(data_to_sign_len);
++    if(!sign_buffer){
++        free(encrypted_si->record);
++        free(encrypted_si);
++        return false;
++    }
++
++    memcpy(sign_buffer, encrypted_si->iv, 16);
++    memcpy(sign_buffer + 16, encrypted_si->salt, 16);
++    memcpy(sign_buffer + 32, encrypted_si->record, encrypted_si->bufSize);
++
++    //sign
++    char *mac = sign((unsigned char *)sign_buffer, data_to_sign_len, (unsigned char *)token, token_len);
++
++    //copy mac into the signature field
++    memcpy(encrypted_si->signature, mac, 32);
++
++
++    //write the encrypted and signed log back to path
++    bool success = write_to_path(path, encrypted_si);
++
++    //cleanup
++    free(sign_buffer);
++    free(encrypted_si->record);
++    free(encrypted_si);
++
++    return success;
++}
++
++Buffer verify_then_decrypt(char *path, unsigned char *token, unsigned int token_len) {
++    //printf("start verify_then_decrypt: %s\n", path);
++    //printf("Path: %s, Token: %s\n", path, token);
++    Buffer result = {NULL, 0};
++
++    //load data from log file
++    SecInfo *si = read_from_path(path);
++    if(si == NULL){
++        return result;
++    }
++    //printf("read_from_path. bufSize: %d\n", si->bufSize);
++
++    //extract parameter 
++    unsigned int data_len = 16 + 16 + si->bufSize;
++    unsigned char *data = malloc(data_len);
++
++    memcpy(data, si->iv, 16);
++    memcpy(data + 16, si->salt, 16);
++    memcpy(data + 32, si->record, si->bufSize);
++
++    //verify
++    int verify_result = verify(data, data_len, token, token_len, (unsigned char *)si->signature);
++    //printf("verify_result: %d \n", verify_result);
++
++    //if verify returns 0, the macs are not equal
++    if (verify_result == 0) {
++        free(data);
++        free(si->record);
++        free(si);
++        result.Length= (unsigned long)-1;
++        //printf("Integrity violation %lu\n",result.Length);
++        return result;
++    }
++    
++    //decrypt
++    result = dec((const char *)token, si);
++    //printf("dec finished. Plaintext Length: %d\n", result.Length);
++
++    //cleanup
++    free(data);
++    free(si->record);
++    free(si);
++
++    return result;
++}
+diff --git a/data.h b/data.h
+index d25c1f1..432f55a 100644
+--- a/data.h
++++ b/data.h
+@@ -1,78 +1,78 @@
+-#ifndef _BUFFR_H
+-#define _BUFFR_H
+-#include <jansson.h>
+-#include <stdbool.h>
+-
+-typedef struct _Buffer {
+-  unsigned char *Buf;
+-  unsigned long Length;
+-} Buffer;
+-
+-typedef enum _GuestType {
+-  Employee,
+-  Guest
+-} GuestType;
+-
+-typedef enum _ActionType {
+-  Arrived,
+-  Left
+-} ActionType;
+-
+-typedef struct _Record {
+-  //put some things here
+-  long timestamp;
+-  GuestType guestType; 
+-  ActionType actionType;
+-  int room;
+-  char * name; 
+-} Record;
+-
+-typedef struct _CmdLineResult {
+-  int timestamp;
+-  char  * token;
+-  char * name;
+-  GuestType guestType; 
+-  int room;
+-  char * logpath;
+-  ActionType actionType;
+-  int batch_flag;
+-  char * batchpath;
+-  int     good;
+-} CmdLineResult;
+-
+-typedef struct _SecInfo {
+-  unsigned int bufSize;  //TBD modify char to unsinged int
+-  char iv[16];
+-  char salt[16];
+-  char signature[32];
+-  char* record;
+-
+-} SecInfo;
+-
+-void record_names_cleanup (Record* recList, size_t size);
+-
+-bool get_records(json_t* root, char* name, GuestType guest, Record ** recordList, size_t* recSize);
+-
+-int get_latest_timestamp(json_t* root);
+-bool get_all_type_records(json_t* root, GuestType guest, Record ** recordList, size_t* recSize);
+-
+-bool get_all_records(json_t* root, Record ** recordList, size_t* recSize);
+-
+-bool get_latest_record(json_t* root, char* name, GuestType guest, Record ** record);
+-bool insert_rec(json_t *root, Record* r);
+-
+-json_t *json_from_buf(char* buffer, size_t bufLen);
+-
+-const char * buf_from_json(json_t *root);
+-
+-SecInfo * read_from_path(char *path);
+-bool write_to_path(char *path, SecInfo * s);
+-Buffer concat_buffs(Buffer *A, Buffer *B);
+-Buffer print_record(Record *R);
+-void dump_record(Record *R);
+-
+-int read_records_from_path(char *path, unsigned char *key, Record **, unsigned int *);
+-Buffer verify_then_decrypt(char *path, unsigned char *token, unsigned int token_len);
+-bool encrypt_then_sign(char *path, char *token, unsigned int token_len, unsigned char *data, unsigned long data_len);
+-
+-#endif
++#ifndef _BUFFR_H
++#define _BUFFR_H
++#include <jansson.h>
++#include <stdbool.h>
++
++typedef struct _Buffer {
++  unsigned char *Buf;
++  unsigned long Length;
++} Buffer;
++
++typedef enum _GuestType {
++  Employee,
++  Guest
++} GuestType;
++
++typedef enum _ActionType {
++  Arrived,
++  Left
++} ActionType;
++
++typedef struct _Record {
++  //put some things here
++  long timestamp;
++  GuestType guestType; 
++  ActionType actionType;
++  int room;
++  char * name; 
++} Record;
++
++typedef struct _CmdLineResult {
++  int timestamp;
++  char  * token;
++  char * name;
++  GuestType guestType; 
++  int room;
++  char * logpath;
++  ActionType actionType;
++  int batch_flag;
++  char * batchpath;
++  int     good;
++} CmdLineResult;
++
++typedef struct _SecInfo {
++  unsigned int bufSize;  //TBD modify char to unsinged int
++  char iv[16];
++  char salt[16];
++  char signature[32];
++  char* record;
++
++} SecInfo;
++
++void record_names_cleanup (Record* recList, size_t size);
++
++bool get_records(json_t* root, char* name, GuestType guest, Record ** recordList, size_t* recSize);
++
++int get_latest_timestamp(json_t* root);
++bool get_all_type_records(json_t* root, GuestType guest, Record ** recordList, size_t* recSize);
++
++bool get_all_records(json_t* root, Record ** recordList, size_t* recSize);
++
++bool get_latest_record(json_t* root, char* name, GuestType guest, Record ** record);
++bool insert_rec(json_t *root, Record* r);
++
++json_t *json_from_buf(char* buffer, size_t bufLen);
++
++const char * buf_from_json(json_t *root);
++
++SecInfo * read_from_path(char *path);
++bool write_to_path(char *path, SecInfo * s);
++Buffer concat_buffs(Buffer *A, Buffer *B);
++Buffer print_record(Record *R);
++void dump_record(Record *R);
++
++int read_records_from_path(char *path, unsigned char *key, Record **, unsigned int *);
++Buffer verify_then_decrypt(char *path, unsigned char *token, unsigned int token_len);
++bool encrypt_then_sign(char *path, char *token, unsigned int token_len, unsigned char *data, unsigned long data_len);
++
++#endif
+diff --git a/logappend.c b/logappend.c
+index cd82e80..ac3bf05 100644
+--- a/logappend.c
++++ b/logappend.c
+@@ -1,598 +1,598 @@
+-#include <unistd.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <string.h>
+-#include <wordexp.h>
+-#include <stdbool.h>
+-#include "data.h"
+-#include <ctype.h>
+-#include <errno.h>
+-#include <jansson.h>
+-
+-
+-
+-bool is_all_digits(char *s){
+-  if (s == NULL || *s == '\0'){
+-    return false;
+-  }
+-  
+-  //digit rule: 0-9
+-  for (int i=0; s[i] != '\0'; i++){
+-    if (!((s[i]>='0' && s[i]<='9'))){
+-      return false;
+-    }
+-  }  
+-
+-  return true;
+-}
+-
+-bool is_valid_name(char *name){
+-  if (name == NULL || *name == '\0'){
+-    return false;
+-  }
+-  
+-  //naming rule: a-z or A-Z
+-  for (int i=0; name[i] != '\0'; i++){
+-    if (!((name[i]>='a' && name[i]<='z')|| (name[i]>='A' && name[i]<='Z'))){
+-      return false;
+-    }
+-
+-  }
+-
+-  return true;
+-}
+-
+-bool is_valid_token(char *token){
+-  if (token == NULL || *token == '\0'){
+-    return false;
+-  }
+-  //token rule: a-z or A-Z or 0-9
+-  for (int i =0; token[i]!= '\0'; i++){
+-    if (!((token[i]>='a' && token[i]<='z')||(token[i]>='A' && token[i]<='Z')||(token[i]>='0' && token[i]<='9'))) {
+-      return false;
+-    }
+-  }
+-  return true;
+-}
+-
+-bool is_valid_logname(char *logname){
+-  if (logname == NULL || *logname == '\0'){
+-    return false;
+-  }
+-  
+-  //naming rule: a-z or A-Z
+-  for (int i=0; logname[i] != '\0'; i++){
+-    if (!(isalnum(logname[i])|| (logname[i] == '_') ||(logname[i] == '.'))){
+-      return false;
+-    }
+-
+-  }
+-  return true;
+-}
+-
+-bool is_valid_batch_name(char *batchpath){
+-  if (batchpath == NULL || *batchpath == '\0') return false;
+-
+-  if (strchr(batchpath, '/') != NULL) return false;
+-  if (strchr(batchpath, '\\') != NULL) return false;
+-  return true;
+-}
+-
+-void free_cmd_result(CmdLineResult *R){
+-  if (R->name){
+-    free(R->name);
+-    R->name = NULL;
+-  } 
+-  if (R->token){
+-    free(R->token);
+-    R->token = NULL;
+-  }
+-  if (R->logpath){
+-    free(R->logpath);
+-    R->logpath = NULL;
+-  }
+-  if (R->batchpath) {
+-    free(R->batchpath);
+-    R->batchpath = NULL;
+-  }
+-
+-}
+-bool validation_check(CmdLineResult *cmdRes , Record *current_rec, int latest_time){
+-
+-  //check timestamp
+-  if (latest_time >= cmdRes->timestamp){
+-    return false;
+-  }
+-
+-  int cur_room;
+-  if (current_rec == NULL){
+-    cur_room = -2;
+-  } else{
+-    if (current_rec->actionType == Left){
+-      if (current_rec->room>=0){
+-        cur_room = -1; //left room x -> back to gallery
+-      } else if (current_rec->room == -1)
+-      {
+-        cur_room = -2; //left gallery -> back to outside
+-      } else{
+-        return false; 
+-      }
+-      
+-    } else {
+-      //arrived condition
+-      cur_room = current_rec->room;
+-    }
+-  }
+-
+-
+-  
+-  //user first login or current not in gallery. (only allow: arrive + galleryID)
+-  if(current_rec == NULL || cur_room == -2){
+-    if ((cmdRes->actionType == Arrived )&&(cmdRes->room == -1)){
+-      //validate
+-      return true;
+-    } 
+-  } 
+-
+-  //user current in room(only allow: left + roomID)
+-  else if (cur_room >=0){
+-    if (cmdRes->actionType == Left && cmdRes->room == cur_room){
+-      //validated
+-      return true;
+-    } 
+-  }
+-
+-  //user current in gallery(allow: left + galleryID/ arrive + roomID)
+-  else if(cur_room == -1){
+-    if (cmdRes->actionType == Left && cmdRes->room == -1){
+-      //validated
+-      return true;
+-    } else if( cmdRes->actionType == Arrived && cmdRes->room >= 0){
+-      //validated
+-      return true;
+-    } 
+-  }
+-  
+-  return false;
+-}
+-
+-CmdLineResult parse_cmdline(int argc, char *argv[], int is_batch) {
+-  /*
+-  for (int i = 0; i < argc; i++) {
+-    printf(" dbg print: argv[%d] = %s (hex: %02x)\n", i, argv[i], (unsigned char)argv[i][0]);
+-  }
+-    */
+-  optind = 0; //TBD mac=1, linux=0
+-  opterr = 0; 
+-  optopt = 0;
+-  CmdLineResult R = { 0 };
+-  int opt,r = -1;
+-  int has_batch = 0;
+-  int has_time = 0;
+-  int has_token = 0;
+-  int has_action = 0;
+-  int has_name = 0;
+-  int has_room = 0;
+-  R.good = -1;
+-  R.room = -1; //without -R, default action: entering gallery
+-
+-  //argument data
+-  char    *logpath = NULL;
+-
+-  //pick up the switches
+-  while ((opt = getopt(argc, argv, "T:K:E:G:ALR:B:")) != -1) {
+-    int     br = 0;
+-    size_t  len;
+-    
+-
+-    switch(opt) {
+-      case 'B':
+-        // 'B' in batch file or double B
+-        if (is_batch || has_batch) {
+-          goto cleanup;
+-        }
+-        
+-        if (!is_valid_batch_name(optarg))  goto cleanup;
+-
+-        R.batchpath = strdup(optarg);
+-        has_batch = 1;
+-        R.batch_flag = 1;
+-
+-	      break;  
+-
+-      case 'T':
+-	      //timestamp 
+-        if(has_time)  goto cleanup;
+-        if (!is_all_digits(optarg))  goto cleanup;
+-
+-        long t_val = strtol(optarg, NULL, 10);
+-        if (t_val<1 || t_val > 1073741823)  goto cleanup;
+-
+-        R.timestamp = (int) t_val;
+-        has_time = 1;
+-        break;
+-
+-      case 'K':
+-	      //secret token
+-        if (has_token)  goto cleanup;
+-        if(!is_valid_token(optarg))  goto cleanup;
+-        R.token = strdup(optarg);
+-        has_token = 1;
+-
+-        break;
+-
+-      case 'A':
+-        //arrival
+-        if (has_action)  goto cleanup;
+-        R.actionType = Arrived;
+-        has_action = 1;
+-        break; 
+-      
+-      case 'L':
+-        //departure
+-        if (has_action)  goto cleanup;
+-        R.actionType = Left;
+-        has_action = 1;
+-        break;
+-
+-      case 'E':
+-        //employee name
+-        if (has_name)  goto cleanup;
+-        if (!is_valid_name(optarg))  goto cleanup;
+-        R.name=strdup(optarg);
+-        R.guestType = Employee;
+-        has_name = 1;
+-        break;
+-
+-      case 'G':
+-        //guest name
+-        if (has_name)  goto cleanup;
+-        if (!is_valid_name(optarg))  goto cleanup;
+-        R.name=strdup(optarg);
+-        R.guestType = Guest;
+-        has_name = 1;
+-	      break;
+-
+-      case 'R':
+-        //room ID
+-        if(has_room)  goto cleanup;
+-        if (!is_all_digits(optarg))  goto cleanup;
+-
+-        long r_val = strtol(optarg, NULL, 10);
+-        if (r_val<0 || r_val > 1073741823)  goto cleanup;
+-
+-        R.room = (int) r_val;
+-        has_room = 1;
+-
+-        break;
+-      case '?':
+-        //printf("ignore0: [-%c] (ASCII: %d)\n", optopt, optopt); 
+-        goto cleanup;
+-        break;
+-
+-      default:
+-        //unknown option, leave
+-        //printf("ignore1\n");
+-        goto cleanup;
+-        break;
+-    }
+-
+-    if(br) {
+-      break;
+-    }
+-  }
+-  
+-  
+-  //pick up the positional argument for log path
+-  if(optind < argc) {
+-    logpath = argv[optind]; 
+-
+-    //check logfile name validation
+-    if(!is_valid_logname(logpath)){
+-      goto cleanup;
+-    }
+-    
+-    R.logpath = strdup(argv[optind]);
+-    
+-    //if more than 1 logfile name
+-    optind ++;
+-    if (optind <argc){
+-      //printf("ignore2\n");
+-      goto cleanup;
+-    }
+-     
+-  } else if (!has_batch){
+-    //no logpath arg
+-     goto cleanup;
+-  }
+-
+-  if(has_batch) {
+-    if(has_time || has_token || has_action || has_name || has_room|| logpath){
+-      goto cleanup;
+-    }
+-    R.good = 0;
+-
+-  } else {
+-    //single command
+-    if(!(has_time && has_token && has_action && has_name )){
+-       goto cleanup;
+-    }
+-
+-    R.good = 0;
+-  }
+-
+-  cleanup:
+-    if (R.good == -1){
+-      free_cmd_result(&R);
+-    }
+-    return R;
+-}
+-
+-int do_batch(char *filepath) {
+-  //printf("start do_batch test!\n");
+-  //read batch file from filepath
+-  char  *data = NULL;
+- 
+-  FILE *fp  = fopen(filepath, "r");
+-
+-  //batch file not exist
+-  if (!fp){
+-    return -1;
+-  }
+-
+-  size_t len = 0;
+-
+-  //parse each cmd
+-  while(getline(&data, &len, fp) != -1){
+-    size_t data_len = strlen(data);
+-    if(data_len > 0 && data[data_len - 1] =='\n'){
+-      data[data_len - 1] = '\0';
+-    }
+-    if(strlen(data) == 0) continue;
+-
+-    //printf("command: [%s]\n", data);
+-
+-    //parsing each line to arg array
+-    wordexp_t p;
+-    if (wordexp(data, &p, WRDE_NOCMD) != 0){
+-      //printf("illegal format\n");  
+-      continue;
+-    }
+-
+-    //shift arguments, b/c getopt drop first arg
+-    int temp_argc = p.we_wordc + 1;
+-    char **temp_argv = malloc(sizeof(char*)*(temp_argc +1));
+-    temp_argv[0] = "logappend";
+-    for (int i=0; i< p.we_wordc; i++){
+-      temp_argv[i+1]= p.we_wordv[i];
+-    }
+-    temp_argv[temp_argc] = NULL;
+-
+-    CmdLineResult cmdRes  = parse_cmdline(temp_argc, temp_argv, 1);
+-    if (cmdRes.good != 0){
+-      printf("invalid option\n");
+-      free_cmd_result(&cmdRes);
+-      free(temp_argv);
+-      wordfree(&p);
+-      continue; 
+-    }
+-
+-    //start parsing logfile 
+-    Buffer B = verify_then_decrypt(cmdRes.logpath, (unsigned char *)cmdRes.token, strlen(cmdRes.token));
+-    json_t *root = NULL;
+-    Record * current_rec = NULL;
+-    if(B.Length == (unsigned long)-1){
+-        printf("invalid token\n");
+-        free_cmd_result(&cmdRes);
+-        continue;  
+-    } else if (B.Length == 0) {
+-      //printf("logfile does not exist.\n");
+-      root = json_object();
+-    } else {
+-      //printf("logfile exists.\n");
+-      root = json_from_buf((char *)B.Buf, B.Length);
+-      int latest_time = get_latest_timestamp(root);
+-      if (latest_time == -1){
+-        //printf("batch:  get latest timestamp failed\n");
+-        free_cmd_result(&cmdRes);
+-        continue;     
+-      }
+-      if(!get_latest_record(root, cmdRes.name, cmdRes.guestType, &current_rec )){
+-        //printf("batch: get latest record failed\n");
+-        free_cmd_result(&cmdRes);
+-        continue; 
+-      } 
+-      if (!validation_check(&cmdRes, current_rec, latest_time)){
+-        printf("invalid check\n");
+-        free_cmd_result(&cmdRes);
+-        continue;    
+-      }
+-    }  
+-
+-    //write the result back out to the file
+-    Record new_rec = {0};
+-    new_rec.timestamp = cmdRes.timestamp;
+-    new_rec.guestType = cmdRes.guestType;
+-    new_rec.room = cmdRes.room;
+-    new_rec.name = cmdRes.name;
+-    new_rec.actionType = cmdRes.actionType; 
+-
+-
+-    if(!insert_rec(root, &new_rec)){
+-      printf("batch: record write back failed\n");
+-      free_cmd_result(&cmdRes);
+-      continue;  
+-    }
+-
+-    //printf("buf_from_json\n");
+-    const char * data = buf_from_json(root);
+-    if(!data){
+-      //printf("batch: json write back failed\n");
+-      free_cmd_result(&cmdRes);
+-      continue; 
+-    }
+-
+-    //enc + write back
+-    //printf("write back\n");
+-    if(encrypt_then_sign(cmdRes.logpath, cmdRes.token, strlen(cmdRes.token), (unsigned char *)data, strlen(data)) != 1){
+-      //printf("batch: enc write back failed\n");
+-      free_cmd_result(&cmdRes);
+-      continue; 
+-    }
+-
+-
+-    free_cmd_result(&cmdRes);
+-    free(temp_argv);
+-    wordfree(&p);
+-    
+-  }
+-
+-  free(data);
+-  fclose(fp);
+-  return 0;
+-}
+-
+-
+-
+-
+-int main(int argc, char *argv[]) {
+-  int r;
+-  CmdLineResult cmdRes = {0};
+-  //printf("start test!\n");
+-  /*
+-  printf("User Command: ");
+-    for (int i = 0; i < argc; i++) {
+-        printf("%s ", argv[i]);
+-    }
+-    printf("\n");
+-  */
+-  cmdRes = parse_cmdline(argc, argv, 0);
+-  
+-  if(cmdRes.good != 0) {
+-    printf("invalid\n");
+-    free_cmd_result(&cmdRes);
+-    return 255;
+-  }
+-  
+-  //handle batch 
+-  if (cmdRes.batch_flag){
+-    int batch_res = do_batch(cmdRes.batchpath);
+-    if (batch_res !=0){
+-      printf("invalid\n");
+-      free_cmd_result(&cmdRes); 
+-      return 255;
+-    }
+-    free_cmd_result(&cmdRes); 
+-    return 0;
+-  }
+-
+-
+-  // int fd = open(cmdRes.logpath, O_RDONLY);
+-  // if( fd == -1){
+-  //   if (errno == ENOENT){
+-  //     print("log file doesn't exist. creating log.\n");
+-  //     // create file
+-  //     fd = open(cmdRes.logpath, O_CREAT | O_WRONLY, 0644);
+-
+-  //     const char *json_format = "{\"records\":{\"employee\":{},\"guest\":{}}}";
+-  //     write(fd, json_format,strlen(json_format));
+-
+-  //     if(fd == -1){
+-  //       printf("invalid: failed to create log file.\n");
+-  //       free_cmd_result(&cmdRes);
+-  //       return 255;
+-  //     }
+-  //   } else {
+-  //     printf("invalid\n");
+-  //     free_cmd_result(&cmdRes);
+-  //     return 255;
+-  //   }
+-  // }
+-  // close(fd);
+-  
+-  //printf("finsh parsing cmd\n");
+-
+-  //decrypt and get 
+-  Buffer B = verify_then_decrypt(cmdRes.logpath, (unsigned char *)cmdRes.token, strlen(cmdRes.token));
+-  json_t *root = NULL;
+-  Record * current_rec = NULL;
+-  if(B.Length == (unsigned long)-1){
+-    printf("invalid\n");
+-    free_cmd_result(&cmdRes);
+-    return 255;
+-  } else if(B.Length == 0){
+-    //Buffer length == 0
+-    //printf("logfile does not exist.\n");
+-    root = json_object();
+-  } else {
+-    //printf("logfile exists.\n");
+-    root = json_from_buf((char *)B.Buf, B.Length);
+-    int latest_time = get_latest_timestamp(root);
+-    if (latest_time == -1){
+-      printf("invalid\n");
+-      free_cmd_result(&cmdRes);
+-      return 255;    
+-    }
+-    if(!get_latest_record(root, cmdRes.name, cmdRes.guestType, &current_rec )){
+-      printf("invalid\n");
+-      free_cmd_result(&cmdRes);
+-      return 255;
+-    } 
+-    if (!validation_check(&cmdRes, current_rec, latest_time)){
+-      printf("invalid\n");
+-      free_cmd_result(&cmdRes);
+-      return 255;   
+-    }
+-  } 
+-
+-  //write the result back out to the file
+-  //printf("new rec\n");
+-  Record new_rec = {0};
+-  new_rec.timestamp = cmdRes.timestamp;
+-  new_rec.guestType = cmdRes.guestType;
+-  new_rec.room = cmdRes.room;
+-  new_rec.name = cmdRes.name;
+-  new_rec.actionType = cmdRes.actionType; 
+-
+-  if(!insert_rec(root, &new_rec)){
+-    printf("record write back failed\n");
+-    free_cmd_result(&cmdRes);
+-    return 255;  
+-  }
+-
+-  //printf("buf_from_json\n");
+-  const char * data = buf_from_json(root);
+-  if(!data){
+-    printf("json write back failed\n");
+-    free_cmd_result(&cmdRes);
+-    return 255; 
+-  }
+-
+-  //enc + write back
+-  if(encrypt_then_sign(cmdRes.logpath, cmdRes.token, strlen(cmdRes.token), (unsigned char *)data, strlen(data)) != 1){
+-    printf("enc write back failed\n");
+-    free_cmd_result(&cmdRes);
+-    return 255;  
+-  }
+-free_cmd_result(&cmdRes);
+-return 0; 
+-}
+-
+-/*
+-========== Parse Result ("R")==========
+-Status (good): 0
+-Timestamp:  10
+-Token:      secret
+-Name:       John
+-GuestType:  Employee
+-Action:     Arrived
+-room ID:    0
+-Log Path:   log1
+-Batch Flag: No
+-==================================
+-*/
+-
++#include <unistd.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <wordexp.h>
++#include <stdbool.h>
++#include "data.h"
++#include <ctype.h>
++#include <errno.h>
++#include <jansson.h>
++
++
++
++bool is_all_digits(char *s){
++  if (s == NULL || *s == '\0'){
++    return false;
++  }
++  
++  //digit rule: 0-9
++  for (int i=0; s[i] != '\0'; i++){
++    if (!((s[i]>='0' && s[i]<='9'))){
++      return false;
++    }
++  }  
++
++  return true;
++}
++
++bool is_valid_name(char *name){
++  if (name == NULL || *name == '\0'){
++    return false;
++  }
++  
++  //naming rule: a-z or A-Z
++  for (int i=0; name[i] != '\0'; i++){
++    if (!((name[i]>='a' && name[i]<='z')|| (name[i]>='A' && name[i]<='Z'))){
++      return false;
++    }
++
++  }
++
++  return true;
++}
++
++bool is_valid_token(char *token){
++  if (token == NULL || *token == '\0'){
++    return false;
++  }
++  //token rule: a-z or A-Z or 0-9
++  for (int i =0; token[i]!= '\0'; i++){
++    if (!((token[i]>='a' && token[i]<='z')||(token[i]>='A' && token[i]<='Z')||(token[i]>='0' && token[i]<='9'))) {
++      return false;
++    }
++  }
++  return true;
++}
++
++bool is_valid_logname(char *logname){
++  if (logname == NULL || *logname == '\0'){
++    return false;
++  }
++  
++  //naming rule: a-z or A-Z
++  for (int i=0; logname[i] != '\0'; i++){
++    if (!(isalnum(logname[i])|| (logname[i] == '_') ||(logname[i] == '.'))){
++      return false;
++    }
++
++  }
++  return true;
++}
++
++bool is_valid_batch_name(char *batchpath){
++  if (batchpath == NULL || *batchpath == '\0') return false;
++
++  if (strchr(batchpath, '/') != NULL) return false;
++  if (strchr(batchpath, '\\') != NULL) return false;
++  return true;
++}
++
++void free_cmd_result(CmdLineResult *R){
++  if (R->name){
++    free(R->name);
++    R->name = NULL;
++  } 
++  if (R->token){
++    free(R->token);
++    R->token = NULL;
++  }
++  if (R->logpath){
++    free(R->logpath);
++    R->logpath = NULL;
++  }
++  if (R->batchpath) {
++    free(R->batchpath);
++    R->batchpath = NULL;
++  }
++
++}
++bool validation_check(CmdLineResult *cmdRes , Record *current_rec, int latest_time){
++
++  //check timestamp
++  if (latest_time >= cmdRes->timestamp){
++    return false;
++  }
++
++  int cur_room;
++  if (current_rec == NULL){
++    cur_room = -2;
++  } else{
++    if (current_rec->actionType == Left){
++      if (current_rec->room>=0){
++        cur_room = -1; //left room x -> back to gallery
++      } else if (current_rec->room == -1)
++      {
++        cur_room = -2; //left gallery -> back to outside
++      } else{
++        return false; 
++      }
++      
++    } else {
++      //arrived condition
++      cur_room = current_rec->room;
++    }
++  }
++
++
++  
++  //user first login or current not in gallery. (only allow: arrive + galleryID)
++  if(current_rec == NULL || cur_room == -2){
++    if ((cmdRes->actionType == Arrived )&&(cmdRes->room == -1)){
++      //validate
++      return true;
++    } 
++  } 
++
++  //user current in room(only allow: left + roomID)
++  else if (cur_room >=0){
++    if (cmdRes->actionType == Left && cmdRes->room == cur_room){
++      //validated
++      return true;
++    } 
++  }
++
++  //user current in gallery(allow: left + galleryID/ arrive + roomID)
++  else if(cur_room == -1){
++    if (cmdRes->actionType == Left && cmdRes->room == -1){
++      //validated
++      return true;
++    } else if( cmdRes->actionType == Arrived && cmdRes->room >= 0){
++      //validated
++      return true;
++    } 
++  }
++  
++  return false;
++}
++
++CmdLineResult parse_cmdline(int argc, char *argv[], int is_batch) {
++  /*
++  for (int i = 0; i < argc; i++) {
++    printf(" dbg print: argv[%d] = %s (hex: %02x)\n", i, argv[i], (unsigned char)argv[i][0]);
++  }
++    */
++  optind = 0; //TBD mac=1, linux=0
++  opterr = 0; 
++  optopt = 0;
++  CmdLineResult R = { 0 };
++  int opt,r = -1;
++  int has_batch = 0;
++  int has_time = 0;
++  int has_token = 0;
++  int has_action = 0;
++  int has_name = 0;
++  int has_room = 0;
++  R.good = -1;
++  R.room = -1; //without -R, default action: entering gallery
++
++  //argument data
++  char    *logpath = NULL;
++
++  //pick up the switches
++  while ((opt = getopt(argc, argv, "T:K:E:G:ALR:B:")) != -1) {
++    int     br = 0;
++    size_t  len;
++    
++
++    switch(opt) {
++      case 'B':
++        // 'B' in batch file or double B
++        if (is_batch || has_batch) {
++          goto cleanup;
++        }
++        
++        if (!is_valid_batch_name(optarg))  goto cleanup;
++
++        R.batchpath = strdup(optarg);
++        has_batch = 1;
++        R.batch_flag = 1;
++
++	      break;  
++
++      case 'T':
++	      //timestamp 
++        if(has_time)  goto cleanup;
++        if (!is_all_digits(optarg))  goto cleanup;
++
++        long t_val = strtol(optarg, NULL, 10);
++        if (t_val<1 || t_val > 1073741823)  goto cleanup;
++
++        R.timestamp = (int) t_val;
++        has_time = 1;
++        break;
++
++      case 'K':
++	      //secret token
++        if (has_token)  goto cleanup;
++        if(!is_valid_token(optarg))  goto cleanup;
++        R.token = strdup(optarg);
++        has_token = 1;
++
++        break;
++
++      case 'A':
++        //arrival
++        if (has_action)  goto cleanup;
++        R.actionType = Arrived;
++        has_action = 1;
++        break; 
++      
++      case 'L':
++        //departure
++        if (has_action)  goto cleanup;
++        R.actionType = Left;
++        has_action = 1;
++        break;
++
++      case 'E':
++        //employee name
++        if (has_name)  goto cleanup;
++        if (!is_valid_name(optarg))  goto cleanup;
++        R.name=strdup(optarg);
++        R.guestType = Employee;
++        has_name = 1;
++        break;
++
++      case 'G':
++        //guest name
++        if (has_name)  goto cleanup;
++        if (!is_valid_name(optarg))  goto cleanup;
++        R.name=strdup(optarg);
++        R.guestType = Guest;
++        has_name = 1;
++	      break;
++
++      case 'R':
++        //room ID
++        if(has_room)  goto cleanup;
++        if (!is_all_digits(optarg))  goto cleanup;
++
++        long r_val = strtol(optarg, NULL, 10);
++        if (r_val<0 || r_val > 1073741823)  goto cleanup;
++
++        R.room = (int) r_val;
++        has_room = 1;
++
++        break;
++      case '?':
++        //printf("ignore0: [-%c] (ASCII: %d)\n", optopt, optopt); 
++        goto cleanup;
++        break;
++
++      default:
++        //unknown option, leave
++        //printf("ignore1\n");
++        goto cleanup;
++        break;
++    }
++
++    if(br) {
++      break;
++    }
++  }
++  
++  
++  //pick up the positional argument for log path
++  if(optind < argc) {
++    logpath = argv[optind]; 
++
++    //check logfile name validation
++    if(!is_valid_logname(logpath)){
++      goto cleanup;
++    }
++    
++    R.logpath = strdup(argv[optind]);
++    
++    //if more than 1 logfile name
++    optind ++;
++    if (optind <argc){
++      //printf("ignore2\n");
++      goto cleanup;
++    }
++     
++  } else if (!has_batch){
++    //no logpath arg
++     goto cleanup;
++  }
++
++  if(has_batch) {
++    if(has_time || has_token || has_action || has_name || has_room|| logpath){
++      goto cleanup;
++    }
++    R.good = 0;
++
++  } else {
++    //single command
++    if(!(has_time && has_token && has_action && has_name )){
++       goto cleanup;
++    }
++
++    R.good = 0;
++  }
++
++  cleanup:
++    if (R.good == -1){
++      free_cmd_result(&R);
++    }
++    return R;
++}
++
++int do_batch(char *filepath) {
++  //printf("start do_batch test!\n");
++  //read batch file from filepath
++  char  *data = NULL;
++ 
++  FILE *fp  = fopen(filepath, "r");
++
++  //batch file not exist
++  if (!fp){
++    return -1;
++  }
++
++  size_t len = 0;
++
++  //parse each cmd
++  while(getline(&data, &len, fp) != -1){
++    size_t data_len = strlen(data);
++    if(data_len > 0 && data[data_len - 1] =='\n'){
++      data[data_len - 1] = '\0';
++    }
++    if(strlen(data) == 0) continue;
++
++    //printf("command: [%s]\n", data);
++
++    //parsing each line to arg array
++    wordexp_t p;
++    if (wordexp(data, &p, WRDE_NOCMD) != 0){
++      //printf("illegal format\n");  
++      continue;
++    }
++
++    //shift arguments, b/c getopt drop first arg
++    int temp_argc = p.we_wordc + 1;
++    char **temp_argv = malloc(sizeof(char*)*(temp_argc +1));
++    temp_argv[0] = "logappend";
++    for (int i=0; i< p.we_wordc; i++){
++      temp_argv[i+1]= p.we_wordv[i];
++    }
++    temp_argv[temp_argc] = NULL;
++
++    CmdLineResult cmdRes  = parse_cmdline(temp_argc, temp_argv, 1);
++    if (cmdRes.good != 0){
++      printf("invalid option\n");
++      free_cmd_result(&cmdRes);
++      free(temp_argv);
++      wordfree(&p);
++      continue; 
++    }
++
++    //start parsing logfile 
++    Buffer B = verify_then_decrypt(cmdRes.logpath, (unsigned char *)cmdRes.token, strlen(cmdRes.token));
++    json_t *root = NULL;
++    Record * current_rec = NULL;
++    if(B.Length == (unsigned long)-1){
++        printf("invalid token\n");
++        free_cmd_result(&cmdRes);
++        continue;  
++    } else if (B.Length == 0) {
++      //printf("logfile does not exist.\n");
++      root = json_object();
++    } else {
++      //printf("logfile exists.\n");
++      root = json_from_buf((char *)B.Buf, B.Length);
++      int latest_time = get_latest_timestamp(root);
++      if (latest_time == -1){
++        //printf("batch:  get latest timestamp failed\n");
++        free_cmd_result(&cmdRes);
++        continue;     
++      }
++      if(!get_latest_record(root, cmdRes.name, cmdRes.guestType, &current_rec )){
++        //printf("batch: get latest record failed\n");
++        free_cmd_result(&cmdRes);
++        continue; 
++      } 
++      if (!validation_check(&cmdRes, current_rec, latest_time)){
++        printf("invalid check\n");
++        free_cmd_result(&cmdRes);
++        continue;    
++      }
++    }  
++
++    //write the result back out to the file
++    Record new_rec = {0};
++    new_rec.timestamp = cmdRes.timestamp;
++    new_rec.guestType = cmdRes.guestType;
++    new_rec.room = cmdRes.room;
++    new_rec.name = cmdRes.name;
++    new_rec.actionType = cmdRes.actionType; 
++
++
++    if(!insert_rec(root, &new_rec)){
++      printf("batch: record write back failed\n");
++      free_cmd_result(&cmdRes);
++      continue;  
++    }
++
++    //printf("buf_from_json\n");
++    const char * data = buf_from_json(root);
++    if(!data){
++      //printf("batch: json write back failed\n");
++      free_cmd_result(&cmdRes);
++      continue; 
++    }
++
++    //enc + write back
++    //printf("write back\n");
++    if(encrypt_then_sign(cmdRes.logpath, cmdRes.token, strlen(cmdRes.token), (unsigned char *)data, strlen(data)) != 1){
++      //printf("batch: enc write back failed\n");
++      free_cmd_result(&cmdRes);
++      continue; 
++    }
++
++
++    free_cmd_result(&cmdRes);
++    free(temp_argv);
++    wordfree(&p);
++    
++  }
++
++  free(data);
++  fclose(fp);
++  return 0;
++}
++
++
++
++
++int main(int argc, char *argv[]) {
++  int r;
++  CmdLineResult cmdRes = {0};
++  //printf("start test!\n");
++  /*
++  printf("User Command: ");
++    for (int i = 0; i < argc; i++) {
++        printf("%s ", argv[i]);
++    }
++    printf("\n");
++  */
++  cmdRes = parse_cmdline(argc, argv, 0);
++  
++  if(cmdRes.good != 0) {
++    printf("invalid\n");
++    free_cmd_result(&cmdRes);
++    return 255;
++  }
++  
++  //handle batch 
++  if (cmdRes.batch_flag){
++    int batch_res = do_batch(cmdRes.batchpath);
++    if (batch_res !=0){
++      printf("invalid\n");
++      free_cmd_result(&cmdRes); 
++      return 255;
++    }
++    free_cmd_result(&cmdRes); 
++    return 0;
++  }
++
++
++  // int fd = open(cmdRes.logpath, O_RDONLY);
++  // if( fd == -1){
++  //   if (errno == ENOENT){
++  //     print("log file doesn't exist. creating log.\n");
++  //     // create file
++  //     fd = open(cmdRes.logpath, O_CREAT | O_WRONLY, 0644);
++
++  //     const char *json_format = "{\"records\":{\"employee\":{},\"guest\":{}}}";
++  //     write(fd, json_format,strlen(json_format));
++
++  //     if(fd == -1){
++  //       printf("invalid: failed to create log file.\n");
++  //       free_cmd_result(&cmdRes);
++  //       return 255;
++  //     }
++  //   } else {
++  //     printf("invalid\n");
++  //     free_cmd_result(&cmdRes);
++  //     return 255;
++  //   }
++  // }
++  // close(fd);
++  
++  //printf("finsh parsing cmd\n");
++
++  //decrypt and get 
++  Buffer B = verify_then_decrypt(cmdRes.logpath, (unsigned char *)cmdRes.token, strlen(cmdRes.token));
++  json_t *root = NULL;
++  Record * current_rec = NULL;
++  if(B.Length == (unsigned long)-1){
++    printf("invalid\n");
++    free_cmd_result(&cmdRes);
++    return 255;
++  } else if(B.Length == 0){
++    //Buffer length == 0
++    //printf("logfile does not exist.\n");
++    root = json_object();
++  } else {
++    //printf("logfile exists.\n");
++    root = json_from_buf((char *)B.Buf, B.Length);
++    int latest_time = get_latest_timestamp(root);
++    if (latest_time == -1){
++      printf("invalid\n");
++      free_cmd_result(&cmdRes);
++      return 255;    
++    }
++    if(!get_latest_record(root, cmdRes.name, cmdRes.guestType, &current_rec )){
++      printf("invalid\n");
++      free_cmd_result(&cmdRes);
++      return 255;
++    } 
++    if (!validation_check(&cmdRes, current_rec, latest_time)){
++      printf("invalid\n");
++      free_cmd_result(&cmdRes);
++      return 255;   
++    }
++  } 
++
++  //write the result back out to the file
++  //printf("new rec\n");
++  Record new_rec = {0};
++  new_rec.timestamp = cmdRes.timestamp;
++  new_rec.guestType = cmdRes.guestType;
++  new_rec.room = cmdRes.room;
++  new_rec.name = cmdRes.name;
++  new_rec.actionType = cmdRes.actionType; 
++
++  if(!insert_rec(root, &new_rec)){
++    printf("record write back failed\n");
++    free_cmd_result(&cmdRes);
++    return 255;  
++  }
++
++  //printf("buf_from_json\n");
++  const char * data = buf_from_json(root);
++  if(!data){
++    printf("json write back failed\n");
++    free_cmd_result(&cmdRes);
++    return 255; 
++  }
++
++  //enc + write back
++  if(encrypt_then_sign(cmdRes.logpath, cmdRes.token, strlen(cmdRes.token), (unsigned char *)data, strlen(data)) != 1){
++    printf("enc write back failed\n");
++    free_cmd_result(&cmdRes);
++    return 255;  
++  }
++free_cmd_result(&cmdRes);
++return 0; 
++}
++
++/*
++========== Parse Result ("R")==========
++Status (good): 0
++Timestamp:  10
++Token:      secret
++Name:       John
++GuestType:  Employee
++Action:     Arrived
++room ID:    0
++Log Path:   log1
++Batch Flag: No
++==================================
++*/
++
+  
+\ No newline at end of file
+diff --git a/logread.c b/logread.c
+index 911fa13..b43b3c0 100644
+--- a/logread.c
++++ b/logread.c
+@@ -1,442 +1,442 @@
+-#include <unistd.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <string.h>
+-#include <sys/queue.h>
+-#include <jansson.h>
+-
+-#include "data.h"
+-
+-int verbose = 0;
+-
+-//for debugging
+-void print_records(Record *records, unsigned int num_records) {
+-  unsigned int i;
+-
+-  //printf("Called print_records\n");
+-  // for(i = 0; i < num_records; i++) {
+-  //   dump_record(&records[i]);
+-  //   printf("----------------\n");
+-  // }
+-
+-  return;
+-}
+-
+-struct Person {
+-  char *name;
+-  int current_room;
+-  GuestType guestType;
+-  SLIST_ENTRY(Person)   link;
+-};
+-
+-SLIST_HEAD(slisthead, Person);
+-
+-void execute_records(Record *Rarr, unsigned int num_records, struct slisthead *head) {
+-  //TODO Code this
+-  //printf("Called execute_records\n");
+-  //iterates through the entire array of records and makes a singly linked list of Persons
+-  for (int i = 0; i < num_records; i++) {
+-    if (!Rarr[i].name) {
+-      printf("Invaid name, stopping execution\n");
+-      return;
+-    }
+-    struct Person *temp;
+-    struct Person *found_person = NULL;
+-    SLIST_FOREACH(temp, head, link) {
+-      if (strcmp(Rarr[i].name, temp->name) == 0) {
+-        //we've found a matching name that already exists in the linked list
+-        found_person = temp;
+-        break;
+-      }
+-    }
+-
+-    if (found_person == NULL && Rarr[i].actionType == Arrived) {
+-      //this is a person that has not yet been added to the linked list
+-      struct Person *new_person = malloc(sizeof(struct Person));
+-      new_person->name = Rarr[i].name;
+-      new_person->current_room = Rarr[i].room;
+-      new_person->guestType = Rarr[i].guestType;
+-      //SLIST_INSERT_HEAD(head, new_person, link);
+-
+-      //insert the person alphabetically into the list
+-      if (SLIST_EMPTY(head) || strcmp(new_person->name, SLIST_FIRST(head)->name) < 0) {
+-          SLIST_INSERT_HEAD(head, new_person, link);
+-      }
+-      else {
+-          struct Person *current;
+-          SLIST_FOREACH(current, head, link) {
+-              struct Person *next = SLIST_NEXT(current, link);
+-              if (next == NULL || strcmp(new_person->name, next->name) < 0) {
+-                  SLIST_INSERT_AFTER(current, new_person, link);
+-                  break;
+-              }
+-          }
+-      }
+-    }
+-    else if (found_person != NULL &&
+-      Rarr[i].actionType == Arrived) {
+-        //this is a person that has already been added to linked list and is entering a new room
+-        found_person->current_room = Rarr[i].room;
+-      }
+-    else if (found_person != NULL &&
+-      Rarr[i].actionType == Left) {
+-        //this is a person that has already been added to linked list and is leaving a room
+-        if (Rarr[i].room == -1) {
+-          //person is leaving the gallery, remove them from linked list
+-          SLIST_REMOVE(head, found_person, Person, link);
+-          free(found_person->name);
+-          free(found_person);
+-        }
+-        else {
+-          //person is leaving current room but staying in the gallery
+-          found_person->current_room = -1;
+-        }
+-      }
+-  }
+-
+-  return;
+-}
+-
+-void print_time(Record *Rarr, unsigned int num_records, char *name) {
+-  //TODO code this
+-  //printf("Called print_time\n");
+-  unsigned long min_time = 0;
+-  unsigned long max_time = 0;
+-  int found = 0;
+-
+-  //iterate through Record array
+-  for (unsigned int i = 0; i < num_records; i++) {
+-    //check if the record belongs to the person we are looking for
+-    if (strcmp(Rarr[i].name, name) == 0) {
+-      unsigned long current_time = (unsigned long)Rarr[i].timestamp;
+-
+-      if (!found) {
+-        //if we haven't found this person yet, initialize with the first timestamp
+-        min_time = current_time;
+-        max_time = current_time;
+-        found = 1;
+-      } else {
+-        //update the min and max
+-        if (current_time < min_time) min_time = current_time;
+-        if (current_time > max_time) max_time = current_time;
+-      }
+-    }
+-  }
+-
+-  if (found) {
+-    printf("%lu", max_time - min_time);
+-  }
+-
+-  return;
+-}
+-
+-void print_rooms(Record *Rarr, unsigned int num_records, char *name) {
+-  int           first = 1;
+-
+-  //printf("Called print_rooms\n");
+-  for (int i = 0; i < num_records; i++) {
+-    if (strcmp(Rarr[i].name, name) == 0 && 
+-      Rarr[i].actionType == Arrived && 
+-      Rarr[i].room != -1) {
+-      
+-      //print a comma before every element except the first one
+-      if (!first) {
+-        printf(",");
+-      }
+-      
+-      printf("%d", Rarr[i].room);
+-      first = 0;
+-    }
+-  }
+-  return;
+-}
+-
+-void print_summary(Record *Rarr, unsigned int num_records) {
+-  struct slisthead head = SLIST_HEAD_INITIALIZER(head);
+-  struct Person *temp;
+-
+-  execute_records(Rarr, num_records, &head);
+-
+-  //printf("Called print_summary\n");
+-  //comma separated list of employees currently in the gallery
+-  //comma separated list of guests currently in the gallery
+-  //print out all the rooms that currently have people in them
+-  //sam is an employee, gerda is a guest
+-  //SAM
+-  //GERDA
+-  //5: GERDA
+-  //30: SAM
+-
+-  //print comma separated list of employees currently in the gallery
+-  int first_employee = 1;
+-  int first_guest = 1;
+-  SLIST_FOREACH(temp, &head, link) {
+-    if (temp->guestType == Employee) {
+-      //print a comma before every element except the first one
+-      if (!first_employee) {
+-        printf(",");
+-      }
+-      
+-      printf("%s", temp->name);
+-      first_employee = 0;
+-    }
+-  }
+-
+-  printf("\n");
+-
+-  //print comma separated list of guests currently in the gallery
+-  SLIST_FOREACH(temp, &head, link) {
+-    if (temp->guestType == Guest) {
+-      //print a comma before every element except the first one
+-      if (!first_guest) {
+-        printf(",");
+-      }
+-      
+-      printf("%s", temp->name);
+-      first_guest = 0;
+-    }
+-  }
+-
+-  printf("\n");
+-
+-  //print out room occupancy
+-  //max possible number of occupied rooms is length of records array
+-  int *occupied_rooms = malloc(num_records * sizeof(int));
+-  int num_rooms = 0;
+-
+-  SLIST_FOREACH(temp, &head, link) {
+-    if (temp->current_room != -1) {
+-      //if current room is an actual room and not just the gallery
+-      int already_added = 0;
+-      for (int i = 0; i < num_rooms; i++) {
+-        if (occupied_rooms[i] == temp->current_room) {
+-          already_added = 1;
+-          break;
+-        }
+-      }
+-      if (!already_added) {
+-        //if current room is not already added, add it
+-        occupied_rooms[num_rooms++] = temp->current_room;
+-      }
+-    }
+-  }
+-
+-  //sort the room ids numerically (bubble sort)
+-  for (int i = 0; i < num_rooms - 1; i++) {
+-    for (int j = 0; j < num_rooms - i - 1; j++) {
+-      if (occupied_rooms[j] > occupied_rooms[j+1]) {
+-        int swap = occupied_rooms[j];
+-        occupied_rooms[j] = occupied_rooms[j+1];
+-        occupied_rooms[j+1] = swap;
+-      }
+-    }
+-  }
+-
+-  //print based on sorted room ids
+-  for (int i = 0; i < num_rooms; i++) {
+-    printf("%d: ", occupied_rooms[i]);
+-
+-    int first_person = 1;
+-    SLIST_FOREACH(temp, &head, link) {
+-      if (temp->current_room == occupied_rooms[i]) {
+-        if (!first_person) {
+-          printf(",");
+-        }
+-        printf("%s", temp->name);
+-        first_person = 0;
+-      }
+-    }
+-    printf("\n");
+-  }
+-
+-  free(occupied_rooms);
+-
+-  return;
+-}
+-
+-void cleanup(Record *records, unsigned int num_records) {
+-  // if (records == NULL) {
+-  //   return;
+-  // }
+-
+-  // for (unsigned int i = 0; i < num_records; i++) {
+-  //   if (records[i].name != NULL) {
+-  //     free(records[i].name);
+-  //   }
+-  // }
+-
+-  // free(records);
+-}
+-
+-int main(int argc, char *argv[]) {
+-  int opt;
+-  char *logpath = NULL;
+-  char *token = NULL;
+-  char *name = NULL;
+-  char mode = 0;
+-  
+-  //TODO Code this
+-
+-  //collect data from commandline
+-  while ((opt = getopt(argc, argv, "K:SRE:G:TI")) != -1) {
+-    switch(opt) {
+-      case 'K':
+-        token = optarg;
+-        break;
+-
+-      case 'S':
+-        //only one of -S, -R, -T, -I may be specified at once, otherwise invalid
+-        if (mode != 0) { 
+-            printf("invalid\n");
+-            return 255; 
+-        }
+-        mode = opt;
+-        break;
+-
+-      case 'R':
+-        if (mode != 0) { 
+-            printf("invalid\n");
+-            return 255; 
+-        }
+-        mode = opt;
+-        break;
+-
+-      case 'T':
+-        if (mode != 0) { 
+-            printf("invalid\n");
+-            return 255; 
+-        }
+-        mode = opt;
+-        break;
+-
+-      case 'I':
+-        if (mode != 0) { 
+-          printf("invalid\n");
+-          return 255; 
+-        }
+-        mode = opt;
+-        break;
+-
+-      case 'E':
+-        name = optarg;
+-        break;
+-
+-      case 'G':
+-        name = optarg;
+-        break;
+-
+-      default:
+-        printf("invalid\n");
+-        return 255;
+-    }
+-  }
+-
+-  //get the name of the logfile
+-  if(optind < argc) {
+-    logpath = argv[optind];
+-  }
+-
+-  //validate data we collected from commandline
+-  if (!token || !logpath) {
+-    printf("invalid\n");
+-    return 255;
+-  }
+-
+-  //read data from logfile
+-  Buffer data = {NULL, 0};
+-  data = verify_then_decrypt(logpath, token, strlen(token));
+-  // printf("data.Length: %d\n", data.Length);
+-  // printf("data.Buf: %s\n", data.Buf);
+-  json_t *json = NULL;
+-  json = json_from_buf(data.Buf, data.Length);
+-  if(json == NULL){
+-    printf("JSON is NULL\n");
+-    return 255;
+-  }
+-
+-  Record *records = NULL;
+-  size_t num_records;
+-  if(!get_all_records(json, &records, &num_records)){
+-    printf("Could not Parse JSON\n");
+-    return 255;
+-   }
+-  // for (int i = 0; i < num_records; i++){
+-  //   printf("index: %d\n", i);
+-  //   Record* r = &records[i];
+-  //   printf("timestamp: %ld\n", r->timestamp);
+-  //   printf("guestType: %u\n", r->guestType);
+-  //   printf("actionType: %u\n", r->actionType);
+-  //   printf("room: %d\n", r->room);
+-  //   printf("name: %s\n", r->name); 
+-  //   printf("end\n");
+-  // }
+-  //printf("Number of records is %zu\n", num_records);
+-
+-  //START OF TEST DATA
+-  //size_t num_records = 8;
+-  //Record *records = malloc(sizeof(Record) * num_records);
+-
+-  // 1. Alice (Employee) enters the Gallery
+-  //records[0] = (Record){.timestamp = 100, .name = strdup("Alice"), .actionType = Arrived, .room = -1, .guestType = Employee};
+-
+-  // 2. Bob (Guest) enters the Gallery
+-  //records[1] = (Record){.timestamp = 110, .name = strdup("Bob"), .actionType = Arrived, .room = -1, .guestType = Guest};
+-
+-  // 3. Alice (Employee) enters Room 5
+-  //records[2] = (Record){.timestamp = 120, .name = strdup("Alice"), .actionType = Arrived, .room = 5, .guestType = Employee};
+-
+-  // 4. Charlie (Employee) enters the Gallery
+-  //records[3] = (Record){.timestamp = 130, .name = strdup("Charlie"), .actionType = Arrived, .room = -1, .guestType = Employee};
+-
+-  // 5. Bob (Guest) enters Room 10
+-  //records[4] = (Record){.timestamp = 140, .name = strdup("Bob"), .actionType = Arrived, .room = 10, .guestType = Guest};
+-
+-  // 6. Alice (Employee) leaves Room 5 (back to Gallery)
+-  //records[5] = (Record){.timestamp = 150, .name = strdup("Alice"), .actionType = Left, .room = 5, .guestType = Employee};
+-
+-  //Mark enters the gallery
+-  //records[6] = (Record){.timestamp = 160, .name = strdup("Mark"), .actionType = Arrived, .room = -1, .guestType = Guest};
+-
+-  //Mark enters room 5
+-  //records[7] = (Record){.timestamp = 170, .name = strdup("Mark"), .actionType = Arrived, .room = 5, .guestType = Guest};
+-  //END OF TEST DATA
+-
+-  //call appropriate function based on commandline data
+-  switch(mode) {
+-    case 'S':
+-      print_summary(records, num_records);
+-      break;
+-
+-    case 'R':
+-      if (name == NULL) {
+-        printf("invalid\n");
+-        cleanup(records, num_records);
+-        return 255;
+-      }
+-      print_rooms(records, num_records, name);
+-      break;
+-
+-    case 'T':
+-      if (name == NULL) {
+-        printf("invalid\n");
+-        cleanup(records, num_records);
+-        return 255;
+-      }
+-      print_time(records, num_records, name);
+-      break;
+-
+-    case 'I':
+-      break;
+-
+-    default:
+-      printf("invalid\n");
+-      cleanup(records, num_records);
+-      return 255;
+-  }
+-
+-  cleanup(records, num_records);
+-  return 0;
+-}
++#include <unistd.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <sys/queue.h>
++#include <jansson.h>
++
++#include "data.h"
++
++int verbose = 0;
++
++//for debugging
++void print_records(Record *records, unsigned int num_records) {
++  unsigned int i;
++
++  //printf("Called print_records\n");
++  // for(i = 0; i < num_records; i++) {
++  //   dump_record(&records[i]);
++  //   printf("----------------\n");
++  // }
++
++  return;
++}
++
++struct Person {
++  char *name;
++  int current_room;
++  GuestType guestType;
++  SLIST_ENTRY(Person)   link;
++};
++
++SLIST_HEAD(slisthead, Person);
++
++void execute_records(Record *Rarr, unsigned int num_records, struct slisthead *head) {
++  //TODO Code this
++  //printf("Called execute_records\n");
++  //iterates through the entire array of records and makes a singly linked list of Persons
++  for (int i = 0; i < num_records; i++) {
++    if (!Rarr[i].name) {
++      printf("Invaid name, stopping execution\n");
++      return;
++    }
++    struct Person *temp;
++    struct Person *found_person = NULL;
++    SLIST_FOREACH(temp, head, link) {
++      if (strcmp(Rarr[i].name, temp->name) == 0 && Rarr[i].guestType == temp->guestType) {
++        //we've found a matching name that already exists in the linked list
++        found_person = temp;
++        break;
++      }
++    }
++
++    if (found_person == NULL && Rarr[i].actionType == Arrived) {
++      //this is a person that has not yet been added to the linked list
++      struct Person *new_person = malloc(sizeof(struct Person));
++      new_person->name = Rarr[i].name;
++      new_person->current_room = Rarr[i].room;
++      new_person->guestType = Rarr[i].guestType;
++      //SLIST_INSERT_HEAD(head, new_person, link);
++
++      //insert the person alphabetically into the list
++      if (SLIST_EMPTY(head) || strcmp(new_person->name, SLIST_FIRST(head)->name) < 0) {
++          SLIST_INSERT_HEAD(head, new_person, link);
++      }
++      else {
++          struct Person *current;
++          SLIST_FOREACH(current, head, link) {
++              struct Person *next = SLIST_NEXT(current, link);
++              if (next == NULL || strcmp(new_person->name, next->name) < 0) {
++                  SLIST_INSERT_AFTER(current, new_person, link);
++                  break;
++              }
++          }
++      }
++    }
++    else if (found_person != NULL &&
++      Rarr[i].actionType == Arrived) {
++        //this is a person that has already been added to linked list and is entering a new room
++        found_person->current_room = Rarr[i].room;
++      }
++    else if (found_person != NULL &&
++      Rarr[i].actionType == Left) {
++        //this is a person that has already been added to linked list and is leaving a room
++        if (Rarr[i].room == -1) {
++          //person is leaving the gallery, remove them from linked list
++          SLIST_REMOVE(head, found_person, Person, link);
++          free(found_person->name);
++          free(found_person);
++        }
++        else {
++          //person is leaving current room but staying in the gallery
++          found_person->current_room = -1;
++        }
++      }
++  }
++
++  return;
++}
++
++void print_time(Record *Rarr, unsigned int num_records, char *name) {
++  //TODO code this
++  //printf("Called print_time\n");
++  unsigned long min_time = 0;
++  unsigned long max_time = 0;
++  int found = 0;
++
++  //iterate through Record array
++  for (unsigned int i = 0; i < num_records; i++) {
++    //check if the record belongs to the person we are looking for
++    if (strcmp(Rarr[i].name, name) == 0) {
++      unsigned long current_time = (unsigned long)Rarr[i].timestamp;
++
++      if (!found) {
++        //if we haven't found this person yet, initialize with the first timestamp
++        min_time = current_time;
++        max_time = current_time;
++        found = 1;
++      } else {
++        //update the min and max
++        if (current_time < min_time) min_time = current_time;
++        if (current_time > max_time) max_time = current_time;
++      }
++    }
++  }
++
++  if (found) {
++    printf("%lu", max_time - min_time);
++  }
++
++  return;
++}
++
++void print_rooms(Record *Rarr, unsigned int num_records, char *name) {
++  int           first = 1;
++
++  //printf("Called print_rooms\n");
++  for (int i = 0; i < num_records; i++) {
++    if (strcmp(Rarr[i].name, name) == 0 && 
++      Rarr[i].actionType == Arrived && 
++      Rarr[i].room != -1) {
++      
++      //print a comma before every element except the first one
++      if (!first) {
++        printf(",");
++      }
++      
++      printf("%d", Rarr[i].room);
++      first = 0;
++    }
++  }
++  return;
++}
++
++void print_summary(Record *Rarr, unsigned int num_records) {
++  struct slisthead head = SLIST_HEAD_INITIALIZER(head);
++  struct Person *temp;
++
++  execute_records(Rarr, num_records, &head);
++
++  //printf("Called print_summary\n");
++  //comma separated list of employees currently in the gallery
++  //comma separated list of guests currently in the gallery
++  //print out all the rooms that currently have people in them
++  //sam is an employee, gerda is a guest
++  //SAM
++  //GERDA
++  //5: GERDA
++  //30: SAM
++
++  //print comma separated list of employees currently in the gallery
++  int first_employee = 1;
++  int first_guest = 1;
++  SLIST_FOREACH(temp, &head, link) {
++    if (temp->guestType == Employee) {
++      //print a comma before every element except the first one
++      if (!first_employee) {
++        printf(",");
++      }
++      
++      printf("%s", temp->name);
++      first_employee = 0;
++    }
++  }
++
++  printf("\n");
++
++  //print comma separated list of guests currently in the gallery
++  SLIST_FOREACH(temp, &head, link) {
++    if (temp->guestType == Guest) {
++      //print a comma before every element except the first one
++      if (!first_guest) {
++        printf(",");
++      }
++      
++      printf("%s", temp->name);
++      first_guest = 0;
++    }
++  }
++
++  printf("\n");
++
++  //print out room occupancy
++  //max possible number of occupied rooms is length of records array
++  int *occupied_rooms = malloc(num_records * sizeof(int));
++  int num_rooms = 0;
++
++  SLIST_FOREACH(temp, &head, link) {
++    if (temp->current_room != -1) {
++      //if current room is an actual room and not just the gallery
++      int already_added = 0;
++      for (int i = 0; i < num_rooms; i++) {
++        if (occupied_rooms[i] == temp->current_room) {
++          already_added = 1;
++          break;
++        }
++      }
++      if (!already_added) {
++        //if current room is not already added, add it
++        occupied_rooms[num_rooms++] = temp->current_room;
++      }
++    }
++  }
++
++  //sort the room ids numerically (bubble sort)
++  for (int i = 0; i < num_rooms - 1; i++) {
++    for (int j = 0; j < num_rooms - i - 1; j++) {
++      if (occupied_rooms[j] > occupied_rooms[j+1]) {
++        int swap = occupied_rooms[j];
++        occupied_rooms[j] = occupied_rooms[j+1];
++        occupied_rooms[j+1] = swap;
++      }
++    }
++  }
++
++  //print based on sorted room ids
++  for (int i = 0; i < num_rooms; i++) {
++    printf("%d: ", occupied_rooms[i]);
++
++    int first_person = 1;
++    SLIST_FOREACH(temp, &head, link) {
++      if (temp->current_room == occupied_rooms[i]) {
++        if (!first_person) {
++          printf(",");
++        }
++        printf("%s", temp->name);
++        first_person = 0;
++      }
++    }
++    printf("\n");
++  }
++
++  free(occupied_rooms);
++
++  return;
++}
++
++void cleanup(Record *records, unsigned int num_records) {
++  // if (records == NULL) {
++  //   return;
++  // }
++
++  // for (unsigned int i = 0; i < num_records; i++) {
++  //   if (records[i].name != NULL) {
++  //     free(records[i].name);
++  //   }
++  // }
++
++  // free(records);
++}
++
++int main(int argc, char *argv[]) {
++  int opt;
++  char *logpath = NULL;
++  char *token = NULL;
++  char *name = NULL;
++  char mode = 0;
++  
++  //TODO Code this
++
++  //collect data from commandline
++  while ((opt = getopt(argc, argv, "K:SRE:G:TI")) != -1) {
++    switch(opt) {
++      case 'K':
++        token = optarg;
++        break;
++
++      case 'S':
++        //only one of -S, -R, -T, -I may be specified at once, otherwise invalid
++        if (mode != 0) { 
++            printf("invalid\n");
++            return 255; 
++        }
++        mode = opt;
++        break;
++
++      case 'R':
++        if (mode != 0) { 
++            printf("invalid\n");
++            return 255; 
++        }
++        mode = opt;
++        break;
++
++      case 'T':
++        if (mode != 0) { 
++            printf("invalid\n");
++            return 255; 
++        }
++        mode = opt;
++        break;
++
++      case 'I':
++        if (mode != 0) { 
++          printf("invalid\n");
++          return 255; 
++        }
++        mode = opt;
++        break;
++
++      case 'E':
++        name = optarg;
++        break;
++
++      case 'G':
++        name = optarg;
++        break;
++
++      default:
++        printf("invalid\n");
++        return 255;
++    }
++  }
++
++  //get the name of the logfile
++  if(optind < argc) {
++    logpath = argv[optind];
++  }
++
++  //validate data we collected from commandline
++  if (!token || !logpath) {
++    printf("invalid\n");
++    return 255;
++  }
++
++  //read data from logfile
++  Buffer data = {NULL, 0};
++  data = verify_then_decrypt(logpath, token, strlen(token));
++  // printf("data.Length: %d\n", data.Length);
++  // printf("data.Buf: %s\n", data.Buf);
++  json_t *json = NULL;
++  json = json_from_buf(data.Buf, data.Length);
++  if(json == NULL){
++    printf("JSON is NULL\n");
++    return 255;
++  }
++
++  Record *records = NULL;
++  size_t num_records;
++  if(!get_all_records(json, &records, &num_records)){
++    printf("Could not Parse JSON\n");
++    return 255;
++   }
++  // for (int i = 0; i < num_records; i++){
++  //   printf("index: %d\n", i);
++  //   Record* r = &records[i];
++  //   printf("timestamp: %ld\n", r->timestamp);
++  //   printf("guestType: %u\n", r->guestType);
++  //   printf("actionType: %u\n", r->actionType);
++  //   printf("room: %d\n", r->room);
++  //   printf("name: %s\n", r->name); 
++  //   printf("end\n");
++  // }
++  //printf("Number of records is %zu\n", num_records);
++
++  //START OF TEST DATA
++  //size_t num_records = 8;
++  //Record *records = malloc(sizeof(Record) * num_records);
++
++  // 1. Alice (Employee) enters the Gallery
++  //records[0] = (Record){.timestamp = 100, .name = strdup("Alice"), .actionType = Arrived, .room = -1, .guestType = Employee};
++
++  // 2. Bob (Guest) enters the Gallery
++  //records[1] = (Record){.timestamp = 110, .name = strdup("Bob"), .actionType = Arrived, .room = -1, .guestType = Guest};
++
++  // 3. Alice (Employee) enters Room 5
++  //records[2] = (Record){.timestamp = 120, .name = strdup("Alice"), .actionType = Arrived, .room = 5, .guestType = Employee};
++
++  // 4. Charlie (Employee) enters the Gallery
++  //records[3] = (Record){.timestamp = 130, .name = strdup("Charlie"), .actionType = Arrived, .room = -1, .guestType = Employee};
++
++  // 5. Bob (Guest) enters Room 10
++  //records[4] = (Record){.timestamp = 140, .name = strdup("Bob"), .actionType = Arrived, .room = 10, .guestType = Guest};
++
++  // 6. Alice (Employee) leaves Room 5 (back to Gallery)
++  //records[5] = (Record){.timestamp = 150, .name = strdup("Alice"), .actionType = Left, .room = 5, .guestType = Employee};
++
++  //Mark enters the gallery
++  //records[6] = (Record){.timestamp = 160, .name = strdup("Mark"), .actionType = Arrived, .room = -1, .guestType = Guest};
++
++  //Mark enters room 5
++  //records[7] = (Record){.timestamp = 170, .name = strdup("Mark"), .actionType = Arrived, .room = 5, .guestType = Guest};
++  //END OF TEST DATA
++
++  //call appropriate function based on commandline data
++  switch(mode) {
++    case 'S':
++      print_summary(records, num_records);
++      break;
++
++    case 'R':
++      if (name == NULL) {
++        printf("invalid\n");
++        cleanup(records, num_records);
++        return 255;
++      }
++      print_rooms(records, num_records, name);
++      break;
++
++    case 'T':
++      if (name == NULL) {
++        printf("invalid\n");
++        cleanup(records, num_records);
++        return 255;
++      }
++      print_time(records, num_records, name);
++      break;
++
++    case 'I':
++      break;
++
++    default:
++      printf("invalid\n");
++      cleanup(records, num_records);
++      return 255;
++  }
++
++  cleanup(records, num_records);
++  return 0;
++}
