@@ -1,0 +1,23 @@
+diff --git a/logread.c b/logread.c
+index 911fa13..9160855 100644
+--- a/logread.c
++++ b/logread.c
+@@ -321,10 +321,18 @@ int main(int argc, char *argv[]) {
+         break;
+ 
+       case 'E':
++        if (name != NULL) { 
++          printf("invalid\n");
++          return 255; 
++        }
+         name = optarg;
+         break;
+ 
+       case 'G':
++        if (name != NULL) { 
++          printf("invalid\n");
++          return 255; 
++        }
+         name = optarg;
+         break;
+ 
