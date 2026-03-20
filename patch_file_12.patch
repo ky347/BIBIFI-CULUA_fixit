@@ -1,21 +1,42 @@
 diff --git a/logread.c b/logread.c
-index f930ffc..2c6495a 100644
+index 2c6495a..4a243c6 100644
 --- a/logread.c
 +++ b/logread.c
-@@ -368,14 +368,14 @@ int main(int argc, char *argv[]) {
+@@ -363,6 +363,11 @@ int main(int argc, char *argv[]) {
+   //read data from logfile
+   Buffer data = {NULL, 0};
+   data = verify_then_decrypt(logpath, token, strlen(token));
++  if(data.Length == 0){
++    printf("integrity violation");
++    return 225;
++  }
++
+   // printf("data.Length: %d\n", data.Length);
+   // printf("data.Buf: %s\n", data.Buf);
    json_t *json = NULL;
-   json = json_from_buf(data.Buf, data.Length);
-   if(json == NULL){
--    printf("JSON is NULL\n");
-+    printf("invalid\n");
-     return 255;
-   }
- 
-   Record *records = NULL;
-   size_t num_records;
-   if(!get_all_records(json, &records, &num_records)){
--    printf("Could not Parse JSON\n");
-+    printf("invalid\n");
-     return 255;
-    }
-   // for (int i = 0; i < num_records; i++){
+diff --git a/patch_file_12.patch b/patch_file_12.patch
+index 53da84d..e69de29 100644
+--- a/patch_file_12.patch
++++ b/patch_file_12.patch
+@@ -1,21 +0,0 @@
+-diff --git a/logread.c b/logread.c
+-index f930ffc..2c6495a 100644
+---- a/logread.c
+-+++ b/logread.c
+-@@ -368,14 +368,14 @@ int main(int argc, char *argv[]) {
+-   json_t *json = NULL;
+-   json = json_from_buf(data.Buf, data.Length);
+-   if(json == NULL){
+--    printf("JSON is NULL\n");
+-+    printf("invalid\n");
+-     return 255;
+-   }
+- 
+-   Record *records = NULL;
+-   size_t num_records;
+-   if(!get_all_records(json, &records, &num_records)){
+--    printf("Could not Parse JSON\n");
+-+    printf("invalid\n");
+-     return 255;
+-    }
+-   // for (int i = 0; i < num_records; i++){
