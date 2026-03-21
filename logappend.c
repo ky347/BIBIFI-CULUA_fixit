@@ -377,7 +377,7 @@ int do_batch(char *filepath) {
 
     CmdLineResult cmdRes  = parse_cmdline(temp_argc, temp_argv, 1);
     if (cmdRes.good != 0){
-      printf("invalid option\n");
+      printf("invalid\n");
       free_cmd_result(&cmdRes);
       free(temp_argv);
       wordfree(&p);
@@ -389,7 +389,7 @@ int do_batch(char *filepath) {
     json_t *root = NULL;
     Record * current_rec = NULL;
     if(B.Length == (unsigned long)-1){
-        printf("invalid token\n");
+        printf("invalid\n");
         free_cmd_result(&cmdRes);
         continue;  
     } else if (B.Length == 0) {
@@ -410,7 +410,7 @@ int do_batch(char *filepath) {
         continue; 
       } 
       if (!validation_check(&cmdRes, current_rec, latest_time)){
-        printf("invalid check\n");
+        printf("invalid\n");
         free_cmd_result(&cmdRes);
         continue;    
       }
