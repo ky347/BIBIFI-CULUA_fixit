@@ -3,7 +3,7 @@
   "fixes": [
     {
       "patch": "patch_file_1.patch",
-      "breaks": ["break-000.json"]
+      "breaks": ["break-000.json", "break-018.json"]
     },
     {
       "patch": "patch_file_2.patch",
