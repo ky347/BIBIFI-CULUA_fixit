@@ -360,6 +360,10 @@ int main(int argc, char *argv[]) {
   //read data from logfile
   Buffer data = {NULL, 0};
   data = verify_then_decrypt(logpath, token, strlen(token));
+  if(data.Length == -1){
+    printf("integrity violation\n");
+    return 255;
+  }
   // printf("data.Length: %d\n", data.Length);
   // printf("data.Buf: %s\n", data.Buf);
   json_t *json = NULL;
