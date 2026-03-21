@@ -12,6 +12,10 @@
     {
       "patch": "patch_file_5.patch",
       "breaks": ["break-024.json", "break-032.json"]
+    },
+    {
+      "patch": "patch_file_6.patch",
+      "breaks": ["break-005.json", "break-033.json", "break-034.json"]
     }
   ]
 }
