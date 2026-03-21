@@ -338,6 +338,11 @@ int main(int argc, char *argv[]) {
   if(optind < argc) {
     logpath = argv[optind];
   }
+  //check for additional, illegal arguments
+  if(optind + 1 < argc) {
+    printf("invalid\n");
+    return 255;
+  }
 
   //validate data we collected from commandline
   if (!token || !logpath) {
