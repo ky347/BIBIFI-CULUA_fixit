@@ -46,7 +46,7 @@ bool is_valid_name(char *name){
 }
 
 bool is_valid_token(char *token){
-  if (token == NULL || *token == '\0'){
+  if (token == NULL){
     return false;
   }
   //token rule: a-z or A-Z or 0-9

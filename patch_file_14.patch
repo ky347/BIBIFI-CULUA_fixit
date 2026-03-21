@@ -1,0 +1,13 @@
+diff --git a/logappend.c b/logappend.c
+index cd20dab..f9db268 100644
+--- a/logappend.c
++++ b/logappend.c
+@@ -46,7 +46,7 @@ bool is_valid_name(char *name){
+ }
+ 
+ bool is_valid_token(char *token){
+-  if (token == NULL || *token == '\0'){
++  if (token == NULL){
+     return false;
+   }
+   //token rule: a-z or A-Z or 0-9
