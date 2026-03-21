@@ -429,6 +429,7 @@ int main(int argc, char *argv[]) {
       break;
 
     case 'I':
+      printf("unimplemented\n");
       break;
 
     default:
