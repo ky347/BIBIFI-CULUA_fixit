@@ -46,7 +46,7 @@ void execute_records(Record *Rarr, unsigned int num_records, struct slisthead *h
     struct Person *temp;
     struct Person *found_person = NULL;
     SLIST_FOREACH(temp, head, link) {
-      if (strcmp(Rarr[i].name, temp->name) == 0) {
+      if (strcmp(Rarr[i].name, temp->name) == 0 && Rarr[i].guestType == temp->guestType) {
         //we've found a matching name that already exists in the linked list
         found_person = temp;
         break;
