@@ -1,0 +1,13 @@
+diff --git a/logread.c b/logread.c
+index 911fa13..175c1c7 100644
+--- a/logread.c
++++ b/logread.c
+@@ -353,7 +353,7 @@ int main(int argc, char *argv[]) {
+   json_t *json = NULL;
+   json = json_from_buf(data.Buf, data.Length);
+   if(json == NULL){
+-    printf("JSON is NULL\n");
++    printf("invalid\n");
+     return 255;
+   }
+ 

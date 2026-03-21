@@ -336,8 +336,7 @@ bool get_latest_record(json_t* root, char* name, GuestType guest, Record ** reco
 }
 bool insert_rec(json_t *root, Record* r){
     if(root == NULL) return false;
-    if (!json_is_integer(json_object_get(root, "timestamp"))
-      && json_object_set_new(root, "timestamp", json_integer(r->timestamp)) == -1) {
+    if (json_object_set_new(root, "timestamp", json_integer(r->timestamp)) == -1) {
       return false;
     }
 

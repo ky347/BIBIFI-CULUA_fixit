@@ -59,6 +59,10 @@ bool is_valid_token(char *token){
 }
 
 bool is_valid_logname(char *logname){
+  size_t len = strlen(logname);
+  if (len > 255) { 
+        return false; 
+  }
   if (logname == NULL || *logname == '\0'){
     return false;
   }
@@ -373,7 +377,7 @@ int do_batch(char *filepath) {
 
     CmdLineResult cmdRes  = parse_cmdline(temp_argc, temp_argv, 1);
     if (cmdRes.good != 0){
-      printf("invalid option\n");
+      printf("invalid\n");
       free_cmd_result(&cmdRes);
       free(temp_argv);
       wordfree(&p);
@@ -385,7 +389,7 @@ int do_batch(char *filepath) {
     json_t *root = NULL;
     Record * current_rec = NULL;
     if(B.Length == (unsigned long)-1){
-        printf("invalid token\n");
+        printf("invalid\n");
         free_cmd_result(&cmdRes);
         continue;  
     } else if (B.Length == 0) {
@@ -406,7 +410,7 @@ int do_batch(char *filepath) {
         continue; 
       } 
       if (!validation_check(&cmdRes, current_rec, latest_time)){
-        printf("invalid check\n");
+        printf("invalid\n");
         free_cmd_result(&cmdRes);
         continue;    
       }
@@ -519,6 +523,7 @@ int main(int argc, char *argv[]) {
   Buffer B = verify_then_decrypt(cmdRes.logpath, (unsigned char *)cmdRes.token, strlen(cmdRes.token));
   json_t *root = NULL;
   Record * current_rec = NULL;
+  int latest_time = 0;
   if(B.Length == (unsigned long)-1){
     printf("invalid\n");
     free_cmd_result(&cmdRes);
@@ -530,7 +535,7 @@ int main(int argc, char *argv[]) {
   } else {
     //printf("logfile exists.\n");
     root = json_from_buf((char *)B.Buf, B.Length);
-    int latest_time = get_latest_timestamp(root);
+    latest_time = get_latest_timestamp(root);
     if (latest_time == -1){
       printf("invalid\n");
       free_cmd_result(&cmdRes);
@@ -541,12 +546,12 @@ int main(int argc, char *argv[]) {
       free_cmd_result(&cmdRes);
       return 255;
     } 
-    if (!validation_check(&cmdRes, current_rec, latest_time)){
-      printf("invalid\n");
-      free_cmd_result(&cmdRes);
-      return 255;   
-    }
   } 
+  if (!validation_check(&cmdRes, current_rec, latest_time)){
+    printf("invalid\n");
+    free_cmd_result(&cmdRes);
+    return 255;   
+  }
 
   //write the result back out to the file
   //printf("new rec\n");

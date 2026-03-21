@@ -1,0 +1,12 @@
+diff --git a/logread.c b/logread.c
+index 911fa13..94f4626 100644
+--- a/logread.c
++++ b/logread.c
+@@ -429,6 +429,7 @@ int main(int argc, char *argv[]) {
+       break;
+ 
+     case 'I':
++      printf("unimplemented\n");
+       break;
+ 
+     default:

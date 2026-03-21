@@ -46,7 +46,7 @@ void execute_records(Record *Rarr, unsigned int num_records, struct slisthead *h
     struct Person *temp;
     struct Person *found_person = NULL;
     SLIST_FOREACH(temp, head, link) {
-      if (strcmp(Rarr[i].name, temp->name) == 0) {
+      if (strcmp(Rarr[i].name, temp->name) == 0 && Rarr[i].guestType == temp->guestType) {
         //we've found a matching name that already exists in the linked list
         found_person = temp;
         break;
@@ -101,43 +101,47 @@ void execute_records(Record *Rarr, unsigned int num_records, struct slisthead *h
 }
 
 void print_time(Record *Rarr, unsigned int num_records, char *name) {
-  //TODO code this
-  //printf("Called print_time\n");
-  unsigned long min_time = 0;
-  unsigned long max_time = 0;
+  unsigned long total_time = 0;
+  unsigned long last_arrival = 0;
+  int inside = 0;
   int found = 0;
 
   //iterate through Record array
   for (unsigned int i = 0; i < num_records; i++) {
     //check if the record belongs to the person we are looking for
-    if (strcmp(Rarr[i].name, name) == 0) {
-      unsigned long current_time = (unsigned long)Rarr[i].timestamp;
-
-      if (!found) {
-        //if we haven't found this person yet, initialize with the first timestamp
-        min_time = current_time;
-        max_time = current_time;
-        found = 1;
-      } else {
-        //update the min and max
-        if (current_time < min_time) min_time = current_time;
-        if (current_time > max_time) max_time = current_time;
+    if (strcmp(Rarr[i].name, name) == 0 && Rarr[i].room == -1) {
+      //unsigned long current_time = (unsigned long)Rarr[i].timestamp;
+      found = 1;
+      //if person arrived at gallery
+      if (Rarr[i].actionType == Arrived) {
+        last_arrival = (unsigned long)Rarr[i].timestamp;
+        inside = 1;
+      }
+      //if person left and was previously inside the gallery
+      else if (Rarr[i].actionType == Left && inside) {
+        total_time += ((unsigned long)Rarr[i].timestamp - last_arrival);
+        inside = 0;
       }
     }
   }
 
   if (found) {
-    printf("%lu", max_time - min_time);
+    printf("%lu", total_time);
   }
 
   return;
 }
 
-void print_rooms(Record *Rarr, unsigned int num_records, char *name) {
+int print_rooms(Record *Rarr, unsigned int num_records, char *name) {
   int           first = 1;
+  int exists = 0;
 
   //printf("Called print_rooms\n");
   for (int i = 0; i < num_records; i++) {
+    //check if person exists
+    if (strcmp(Rarr[i].name, name) == 0) {
+      exists = 1;
+    }
     if (strcmp(Rarr[i].name, name) == 0 && 
       Rarr[i].actionType == Arrived && 
       Rarr[i].room != -1) {
@@ -151,7 +155,14 @@ void print_rooms(Record *Rarr, unsigned int num_records, char *name) {
       first = 0;
     }
   }
-  return;
+
+  //if we never found person
+  if (exists == 0) {
+    printf("invalid\n");
+    return 255;
+  }
+
+  return 0;
 }
 
 void print_summary(Record *Rarr, unsigned int num_records) {
@@ -321,10 +332,18 @@ int main(int argc, char *argv[]) {
         break;
 
       case 'E':
+        if (name != NULL) { 
+          printf("invalid\n");
+          return 255; 
+        }
         name = optarg;
         break;
 
       case 'G':
+        if (name != NULL) { 
+          printf("invalid\n");
+          return 255; 
+        }
         name = optarg;
         break;
 
@@ -337,6 +356,12 @@ int main(int argc, char *argv[]) {
   //get the name of the logfile
   if(optind < argc) {
     logpath = argv[optind];
+  }
+
+  //check for additional, illegal arguments
+  if(optind < argc) {
+    printf("invalid\n");
+    return 255;
   }
 
   //validate data we collected from commandline
@@ -353,7 +378,7 @@ int main(int argc, char *argv[]) {
   json_t *json = NULL;
   json = json_from_buf(data.Buf, data.Length);
   if(json == NULL){
-    printf("JSON is NULL\n");
+    printf("invalid\n");
     return 255;
   }
 
@@ -429,6 +454,7 @@ int main(int argc, char *argv[]) {
       break;
 
     case 'I':
+      printf("unimplemented\n");
       break;
 
     default:
