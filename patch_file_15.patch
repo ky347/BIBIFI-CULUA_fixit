@@ -1,0 +1,33 @@
+diff --git a/logread.c b/logread.c
+index 911fa13..3d52091 100644
+--- a/logread.c
++++ b/logread.c
+@@ -322,6 +322,10 @@ int main(int argc, char *argv[]) {
+ 
+       case 'E':
+         name = optarg;
++        if (mode == 'S') {
++          printf("invalid\n");
++          return 255;
++        }
+         break;
+ 
+       case 'G':
+@@ -348,6 +352,10 @@ int main(int argc, char *argv[]) {
+   //read data from logfile
+   Buffer data = {NULL, 0};
+   data = verify_then_decrypt(logpath, token, strlen(token));
++  if(data.Length == -1){
++    printf("integrity violation\n");
++    return 255;
++  }
+   // printf("data.Length: %d\n", data.Length);
+   // printf("data.Buf: %s\n", data.Buf);
+   json_t *json = NULL;
+@@ -439,4 +447,4 @@ int main(int argc, char *argv[]) {
+ 
+   cleanup(records, num_records);
+   return 0;
+-}
++}
+\ No newline at end of file
