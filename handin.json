@@ -24,6 +24,14 @@
     {
       "patch": "patch_file_9.patch",
       "breaks": ["break-007.json"]
+    },
+    {
+      "patch": "patch_file_10.patch",
+      "breaks": ["break-008.json", "break-013.json"]
+    },
+    {
+      "patch": "patch_file_11.patch",
+      "breaks": ["break-011.json", "break-017.json", "break-019.json", "break-022.json", "break-026.json", "break-012.json", "break-021.json"]
     }
   ]
 }

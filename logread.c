@@ -365,7 +365,7 @@ int main(int argc, char *argv[]) {
   json_t *json = NULL;
   json = json_from_buf(data.Buf, data.Length);
   if(json == NULL){
-    printf("JSON is NULL\n");
+    printf("invalid\n");
     return 255;
   }
 
