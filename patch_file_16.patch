@@ -1,0 +1,150 @@
+diff --git a/logread.c b/logread.c
+index 911fa13..01a6f14 100644
+--- a/logread.c
++++ b/logread.c
+@@ -100,47 +100,58 @@ void execute_records(Record *Rarr, unsigned int num_records, struct slisthead *h
+   return;
+ }
+ 
+-void print_time(Record *Rarr, unsigned int num_records, char *name) {
+-  //TODO code this
+-  //printf("Called print_time\n");
+-  unsigned long min_time = 0;
+-  unsigned long max_time = 0;
++int print_time(Record *Rarr, unsigned int num_records, char *name, GuestType gt) {
++  unsigned long total_time = 0;
++  unsigned long last_arrival = 0;
++  unsigned long current_time = 0;
++  int inside = 0;
+   int found = 0;
+ 
+   //iterate through Record array
+   for (unsigned int i = 0; i < num_records; i++) {
+     //check if the record belongs to the person we are looking for
+-    if (strcmp(Rarr[i].name, name) == 0) {
+-      unsigned long current_time = (unsigned long)Rarr[i].timestamp;
+-
+-      if (!found) {
+-        //if we haven't found this person yet, initialize with the first timestamp
+-        min_time = current_time;
+-        max_time = current_time;
+-        found = 1;
+-      } else {
+-        //update the min and max
+-        if (current_time < min_time) min_time = current_time;
+-        if (current_time > max_time) max_time = current_time;
++    if (strcmp(Rarr[i].name, name) == 0 && Rarr[i].room == -1 && Rarr[i].guestType == gt) {
++      //unsigned long current_time = (unsigned long)Rarr[i].timestamp;
++      found = 1;
++      //if person arrived at gallery
++      if (Rarr[i].actionType == Arrived) {
++        last_arrival = (unsigned long)Rarr[i].timestamp;
++        inside = 1;
++      }
++      //if person left and was previously inside the gallery
++      else if (Rarr[i].actionType == Left && inside) {
++        total_time += ((unsigned long)Rarr[i].timestamp - last_arrival);
++        inside = 0;
+       }
+     }
++    current_time = (unsigned long)Rarr[i].timestamp;
++  }
++
++  if (inside) {
++    total_time += current_time - last_arrival;
+   }
+ 
+   if (found) {
+-    printf("%lu", max_time - min_time);
++    printf("%lu", total_time);
+   }
+ 
+-  return;
++  return 0;
+ }
+ 
+-void print_rooms(Record *Rarr, unsigned int num_records, char *name) {
++int print_rooms(Record *Rarr, unsigned int num_records, char *name, GuestType gt) {
+   int           first = 1;
++  int exists = 0;
+ 
+   //printf("Called print_rooms\n");
+   for (int i = 0; i < num_records; i++) {
++    //check if person exists
++    if (strcmp(Rarr[i].name, name) == 0) {
++      exists = 1;
++    }
+     if (strcmp(Rarr[i].name, name) == 0 && 
+       Rarr[i].actionType == Arrived && 
+-      Rarr[i].room != -1) {
++      Rarr[i].room != -1 &&
++      Rarr[i].guestType == gt) {
+       
+       //print a comma before every element except the first one
+       if (!first) {
+@@ -151,7 +162,14 @@ void print_rooms(Record *Rarr, unsigned int num_records, char *name) {
+       first = 0;
+     }
+   }
+-  return;
++  
++  //if we never found person
++  if (exists == 0) {
++    printf("invalid\n");
++    return 255;
++  }
++
++  return 0;
+ }
+ 
+ void print_summary(Record *Rarr, unsigned int num_records) {
+@@ -277,6 +295,7 @@ int main(int argc, char *argv[]) {
+   char *token = NULL;
+   char *name = NULL;
+   char mode = 0;
++  GuestType gt = Guest;
+   
+   //TODO Code this
+ 
+@@ -321,10 +340,23 @@ int main(int argc, char *argv[]) {
+         break;
+ 
+       case 'E':
++        gt = Employee;
++        if (mode == 'S') {
++          printf("invalid\n");
++          return 255;
++        }
++        if (name != NULL) { 
++            printf("invalid\n");
++            return 255; 
++        }
+         name = optarg;
+         break;
+ 
+       case 'G':
++        if (name != NULL) { 
++            printf("invalid\n");
++            return 255; 
++        }
+         name = optarg;
+         break;
+ 
+@@ -416,7 +448,7 @@ int main(int argc, char *argv[]) {
+         cleanup(records, num_records);
+         return 255;
+       }
+-      print_rooms(records, num_records, name);
++      print_rooms(records, num_records, name, gt);
+       break;
+ 
+     case 'T':
+@@ -425,7 +457,7 @@ int main(int argc, char *argv[]) {
+         cleanup(records, num_records);
+         return 255;
+       }
+-      print_time(records, num_records, name);
++      print_time(records, num_records, name, gt);
+       break;
+ 
+     case 'I':

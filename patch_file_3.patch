@@ -1,0 +1,15 @@
+diff --git a/logappend.c b/logappend.c
+index cd82e80..d7ec146 100644
+--- a/logappend.c
++++ b/logappend.c
+@@ -59,6 +59,10 @@ bool is_valid_token(char *token){
+ }
+ 
+ bool is_valid_logname(char *logname){
++  size_t len = strlen(logname);
++  if (len > 255) { 
++        return false; 
++  }
+   if (logname == NULL || *logname == '\0'){
+     return false;
+   }

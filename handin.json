@@ -1,0 +1,49 @@
+{
+  "team": "Culua",
+  "fixes": [
+    {
+      "patch": "patch_file_16.patch",
+      "breaks": ["break-029.json", "break-004.json", "break-027.json", "break-030.json", "break-001.json", "break-031.json", "break-006.json"]
+    },
+    {
+      "patch": "patch_file_17.patch",
+      "breaks": ["break-000.json", "break-018.json"]
+    },
+    {
+      "patch": "patch_file_3.patch",
+      "breaks": ["break-010.json", "break-028.json"]
+    },
+    {
+      "patch": "patch_file_4.patch",
+      "breaks": ["break-009.json", "break-016.json"]
+    },
+    {
+      "patch": "patch_file_5.patch",
+      "breaks": ["break-024.json", "break-032.json"]
+    },
+    {
+      "patch": "patch_file_6.patch",
+      "breaks": ["break-005.json", "break-033.json", "break-034.json"]
+    },
+    {
+      "patch": "patch_file_7.patch",
+      "breaks": ["break-003.json", "break-015.json", "break-025.json"]
+    },
+    {
+      "patch": "patch_file_9.patch",
+      "breaks": ["break-007.json"]
+    },
+    {
+      "patch": "patch_file_10.patch",
+      "breaks": ["break-008.json", "break-013.json"]
+    },
+    {
+      "patch": "patch_file_11.patch",
+      "breaks": ["break-011.json", "break-017.json", "break-019.json", "break-022.json", "break-026.json", "break-012.json", "break-021.json"]
+    },
+    {
+      "patch": "patch_file_13.patch",
+      "breaks": ["break-014.json"]
+    }
+  ]
+}
