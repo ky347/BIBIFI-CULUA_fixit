@@ -7,8 +7,8 @@ index cd82e80..d7ec146 100644
  
  bool is_valid_logname(char *logname){
 +  size_t len = strlen(logname);
-+  if (len > 255) { 
-+        return false; 
++  if (len > 255) {
++        return false;
 +  }
    if (logname == NULL || *logname == '\0'){
      return false;

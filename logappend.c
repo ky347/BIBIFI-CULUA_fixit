@@ -59,6 +59,10 @@ bool is_valid_token(char *token){
 }
 
 bool is_valid_logname(char *logname){
+  size_t len = strlen(logname);
+  if (len > 255) {
+        return false;
+  }
   if (logname == NULL || *logname == '\0'){
     return false;
   }
