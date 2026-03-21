@@ -27,11 +27,11 @@
     },
     {
       "patch": "patch_file_7.patch",
-      "breaks": ["break-003.json", "break-015.json"]
+      "breaks": ["break-003.json", "break-015.json", "break-025.json"]
     },
     {
       "patch": "patch_file_8.patch",
-      "breaks": ["break-004.json"]
+      "breaks": ["break-004.json", "break-027.json"]
     },
     {
       "patch": "patch_file_9.patch",
