@@ -1,0 +1,45 @@
+diff --git a/logread.c b/logread.c
+index 77998ff..f641c1c 100644
+--- a/logread.c
++++ b/logread.c
+@@ -133,11 +133,14 @@ void print_time(Record *Rarr, unsigned int num_records, char *name) {
+   return;
+ }
+ 
+-void print_rooms(Record *Rarr, unsigned int num_records, char *name) {
++int print_rooms(Record *Rarr, unsigned int num_records, char *name) {
+   int           first = 1;
+-
++  int exists = 0;
+   //printf("Called print_rooms\n");
+   for (int i = 0; i < num_records; i++) {
++    if(strcmp(Rarr[i].name, name) == 0) {
++      exists = 1;
++    }
+     if (strcmp(Rarr[i].name, name) == 0 && 
+       Rarr[i].actionType == Arrived && 
+       Rarr[i].room != -1) {
+@@ -151,7 +154,11 @@ void print_rooms(Record *Rarr, unsigned int num_records, char *name) {
+       first = 0;
+     }
+   }
+-  return;
++  if (exists == 0){
++    printf("invalid\n");
++    return 255;
++  }
++  return 0;
+ }
+ 
+ void print_summary(Record *Rarr, unsigned int num_records) {
+@@ -421,7 +428,9 @@ int main(int argc, char *argv[]) {
+         cleanup(records, num_records);
+         return 255;
+       }
+-      print_rooms(records, num_records, name);
++      if(print_rooms(records, num_records, name) == 255){
++        return 255;
++      }
+       break;
+ 
+     case 'T':
