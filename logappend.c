@@ -523,6 +523,7 @@ int main(int argc, char *argv[]) {
   Buffer B = verify_then_decrypt(cmdRes.logpath, (unsigned char *)cmdRes.token, strlen(cmdRes.token));
   json_t *root = NULL;
   Record * current_rec = NULL;
+  int latest_time = 0;
   if(B.Length == (unsigned long)-1){
     printf("invalid\n");
     free_cmd_result(&cmdRes);
@@ -534,7 +535,7 @@ int main(int argc, char *argv[]) {
   } else {
     //printf("logfile exists.\n");
     root = json_from_buf((char *)B.Buf, B.Length);
-    int latest_time = get_latest_timestamp(root);
+    latest_time = get_latest_timestamp(root);
     if (latest_time == -1){
       printf("invalid\n");
       free_cmd_result(&cmdRes);
@@ -545,12 +546,12 @@ int main(int argc, char *argv[]) {
       free_cmd_result(&cmdRes);
       return 255;
     } 
-    if (!validation_check(&cmdRes, current_rec, latest_time)){
-      printf("invalid\n");
-      free_cmd_result(&cmdRes);
-      return 255;   
-    }
   } 
+  if (!validation_check(&cmdRes, current_rec, latest_time)){
+    printf("invalid\n");
+    free_cmd_result(&cmdRes);
+    return 255;
+  }
 
   //write the result back out to the file
   //printf("new rec\n");

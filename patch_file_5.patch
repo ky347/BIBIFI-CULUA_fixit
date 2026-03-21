@@ -32,7 +32,7 @@ index cd82e80..517ef66 100644
 +  if (!validation_check(&cmdRes, current_rec, latest_time)){
 +    printf("invalid\n");
 +    free_cmd_result(&cmdRes);
-+    return 255;   
++    return 255;
 +  }
  
    //write the result back out to the file
