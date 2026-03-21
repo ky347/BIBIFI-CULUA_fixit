@@ -291,6 +291,11 @@ int main(int argc, char *argv[]) {
   while ((opt = getopt(argc, argv, "K:SRE:G:TI")) != -1) {
     switch(opt) {
       case 'K':
+        //token should not be previously assigned
+        if (token != NULL) {
+          printf("invalid\n");
+          return 255;
+        }
         token = optarg;
         break;
 
